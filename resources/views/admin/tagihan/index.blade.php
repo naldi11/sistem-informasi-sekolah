@@ -219,6 +219,15 @@
     <script>
         const now_month = {{ now()->month }};
 
+        $(document).ready(function() {
+            // Re-inisialisasi Select2 khusus untuk modal agar tidak "disabled" atau salah render
+            $('#generateModal .form-select').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                dropdownParent: $('#generateModal')
+            });
+        });
+
         function toggleSiswaList() {
             const show = document.getElementById('targetPilih').checked;
             document.getElementById('siswaListContainer').style.display = show ? 'block' : 'none';
@@ -234,8 +243,8 @@
         }
 
         function setRange(dari, sampai) {
-            document.getElementById('dariBulan').value = dari;
-            document.getElementById('sampaiBulan').value = sampai;
+            $('#dariBulan').val(dari).trigger('change');
+            $('#sampaiBulan').val(sampai).trigger('change');
         }
 
         document.getElementById('searchSiswa')?.addEventListener('input', function () {
