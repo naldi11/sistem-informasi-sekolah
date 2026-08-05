@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\TagihanController;
 use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\LogController;
+use App\Http\Controllers\Admin\MetodePembayaranController;
 use App\Http\Controllers\Siswa\DashboardController as SiswaDashboardController;
 use App\Http\Controllers\Siswa\PembayaranController as SiswaPembayaranController;
 
@@ -44,8 +45,13 @@ Route::middleware(['auth', 'first_login', 'admin'])->prefix('admin')->name('admi
     Route::resource('spp', SppController::class)->except(['show', 'create']);
 
     // Siswa
+    Route::get('/siswa/download-template', [SiswaController::class, 'downloadTemplate'])->name('siswa.downloadTemplate');
+    Route::post('/siswa/import', [SiswaController::class, 'import'])->name('siswa.import');
     Route::resource('siswa', SiswaController::class);
     Route::post('/siswa/{siswa}/reset-password', [SiswaController::class, 'resetPassword'])->name('siswa.resetPassword');
+
+    // Metode Pembayaran
+    Route::resource('metode-pembayaran', MetodePembayaranController::class);
 
     // Tagihan
     Route::get('/tagihan', [TagihanController::class, 'index'])->name('tagihan.index');
@@ -81,6 +87,7 @@ Route::middleware(['auth', 'first_login', 'siswa'])->prefix('siswa')->name('sisw
     Route::match(['get', 'post'], '/checkout', [SiswaPembayaranController::class, 'checkout'])->name('bayar.checkout');
     Route::post('/checkout/process', [SiswaPembayaranController::class, 'processCheckout'])->name('bayar.process');
     Route::get('/invoice/{order_id}', [SiswaPembayaranController::class, 'invoice'])->name('bayar.invoice');
+    Route::post('/invoice/{order_id}/upload-bukti', [SiswaPembayaranController::class, 'uploadBuktiInvoice'])->name('bayar.uploadBukti');
     Route::get('/invoice/{order_id}/status', [SiswaPembayaranController::class, 'checkStatus'])->name('bayar.status');
 });
 

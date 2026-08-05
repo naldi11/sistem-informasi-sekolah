@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Tagihan;
 use App\Models\Pembayaran;
 use App\Models\TransaksiSandbox;
+use App\Models\MetodePembayaran;
 use App\Models\LogAktivitas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -52,17 +53,32 @@ class PembayaranController extends Controller
         $totalNominal = $tagihanList->sum('nominal');
         $tagihanList->load('siswa.kelas');
 
-        return view('siswa.pembayaran.checkout', compact('tagihanList', 'totalNominal'));
+        $metodeList = MetodePembayaran::where('is_active', true)->get();
+
+        return view('siswa.pembayaran.checkout', compact('tagihanList', 'totalNominal', 'metodeList'));
     }
 
     public function processCheckout(Request $request)
     {
         $siswa = auth()->user()->siswa;
-        $request->validate([
+
+        $metode = MetodePembayaran::where('kode', $request->metode_pembayaran)
+            ->where('is_active', true)
+            ->first();
+
+        $rules = [
             'tagihan_ids' => 'required|array|min:1',
             'tagihan_ids.*' => 'exists:tagihan,id',
             'metode_pembayaran' => 'required|string',
-        ]);
+        ];
+
+        if ($metode && $metode->butuh_bukti) {
+            $rules['file_bukti'] = 'required|mimes:jpeg,png,jpg,pdf|max:5120';
+        } else {
+            $rules['file_bukti'] = 'nullable|mimes:jpeg,png,jpg,pdf|max:5120';
+        }
+
+        $request->validate($rules);
 
         $tagihanList = Tagihan::where('siswa_id', $siswa->id)
             ->whereIn('id', $request->tagihan_ids)
@@ -76,38 +92,41 @@ class PembayaranController extends Controller
         }
 
         $totalNominal = $tagihanList->sum('nominal');
-        // Generate Unique Order ID
         $orderId = 'TRX-' . time() . '-' . strtoupper(Str::random(5));
         
-        $tipe = $request->metode_pembayaran === 'qris' ? 'qris' : 'va';
+        $tipe = $metode ? $metode->kategori : ($request->metode_pembayaran === 'qris' ? 'qris' : 'va');
         
-        // Generate Mock Payment Code
+        // Generate Mock Payment Code / Rekening
         if ($tipe === 'qris') {
-            // For QRIS, the url will point to the simulator page to simulate scan
             $kodePembayaran = route('sandbox.simulator', ['order_id' => $orderId]);
+        } elseif ($tipe === 'va') {
+            $prefix = $metode ? $metode->nomor_rekening : '8000';
+            $kodePembayaran = ($prefix ?? '8000') . $siswa->nis;
         } else {
-            // Virtual Account Number (e.g., Bank Code + NIS)
-            $bankCodes = [
-                'va_bca' => '3901',
-                'va_mandiri' => '89508',
-                'va_bri' => '22000'
-            ];
-            $kodePembayaran = ($bankCodes[$request->metode_pembayaran] ?? '8000') . $siswa->nis;
+            $kodePembayaran = ($metode->nomor_rekening ?? '-') . ' (' . ($metode->pemilik_rekening ?? 'Sekolah') . ')';
+        }
+
+        // Upload bukti jika ada
+        $filePath = '';
+        if ($request->hasFile('file_bukti')) {
+            $file = $request->file('file_bukti');
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('storage/bukti_pembayaran'), $fileName);
+            $filePath = 'bukti_pembayaran/' . $fileName;
         }
 
         $transaksi = TransaksiSandbox::create([
             'order_id' => $orderId,
             'siswa_id' => $siswa->id,
             'total_nominal' => $totalNominal,
-            'metode_pembayaran' => $request->metode_pembayaran,
+            'metode_pembayaran' => $metode ? $metode->nama : $request->metode_pembayaran,
             'tipe' => $tipe,
             'kode_pembayaran' => $kodePembayaran,
             'status' => 'pending',
-            'expired_at' => now()->addDay(), // 24 hours expiry
+            'expired_at' => now()->addDay(),
         ]);
 
         foreach ($tagihanList as $t) {
-            // Delete old manual upload if it was rejected previously to clean up
             if ($t->pembayaran && !$t->pembayaran->transaksi_sandbox_id) {
                 $t->pembayaran->delete();
             }
@@ -115,11 +134,30 @@ class PembayaranController extends Controller
             Pembayaran::create([
                 'tagihan_id' => $t->id,
                 'transaksi_sandbox_id' => $transaksi->id,
-                'tanggal_upload' => now(), // basically checkout time
+                'file_bukti' => $filePath,
+                'tanggal_upload' => now(),
             ]);
 
             $t->update(['status' => 'menunggu_verifikasi']);
         }
+
+        if ($filePath) {
+            $admins = \App\Models\User::where('role', 'admin')->get();
+            $daftarBulan = [];
+            foreach ($tagihanList as $t) {
+                $daftarBulan[] = $t->nama_bulan . ' ' . $t->tahun;
+            }
+            $bulanStr = implode(', ', $daftarBulan);
+
+            foreach ($admins as $admin) {
+                \App\Models\Notifikasi::create([
+                    'user_id' => $admin->id,
+                    'pesan' => "Pembayaran baru dari {$siswa->nama} untuk tagihan ($bulanStr). Menunggu verifikasi.",
+                ]);
+            }
+        }
+
+        LogAktivitas::log('checkout_pembayaran', "Checkout pembayaran transaksi {$orderId} untuk " . count($tagihanList) . " tagihan.");
 
         return redirect()->route('siswa.bayar.invoice', ['order_id' => $orderId])
             ->with('success', 'Checkout berhasil! Selesaikan pembayaran Anda.');
@@ -132,7 +170,52 @@ class PembayaranController extends Controller
             ->where('siswa_id', $siswa->id)
             ->firstOrFail();
 
-        return view('siswa.pembayaran.invoice', compact('transaksi'));
+        $metode = MetodePembayaran::where('nama', $transaksi->metode_pembayaran)
+            ->orWhere('kode', $transaksi->metode_pembayaran)
+            ->first();
+
+        return view('siswa.pembayaran.invoice', compact('transaksi', 'metode'));
+    }
+
+    public function uploadBuktiInvoice(Request $request, $orderId)
+    {
+        $siswa = auth()->user()->siswa;
+        $transaksi = TransaksiSandbox::where('order_id', $orderId)
+            ->where('siswa_id', $siswa->id)
+            ->firstOrFail();
+
+        $request->validate([
+            'file_bukti' => 'required|mimes:jpeg,png,jpg,pdf|max:5120',
+        ]);
+
+        $file = $request->file('file_bukti');
+        $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path('storage/bukti_pembayaran'), $fileName);
+        $filePath = 'bukti_pembayaran/' . $fileName;
+
+        $daftarBulan = [];
+        foreach ($transaksi->pembayaran as $p) {
+            $p->update([
+                'file_bukti' => $filePath,
+                'tanggal_upload' => now(),
+            ]);
+            $p->tagihan->update(['status' => 'menunggu_verifikasi']);
+            $daftarBulan[] = $p->tagihan->nama_bulan . ' ' . $p->tagihan->tahun;
+        }
+
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        $bulanStr = implode(', ', $daftarBulan);
+        foreach ($admins as $admin) {
+            \App\Models\Notifikasi::create([
+                'user_id' => $admin->id,
+                'pesan' => "Pembayaran baru dari {$siswa->nama} untuk tagihan ($bulanStr). Menunggu verifikasi.",
+            ]);
+        }
+
+        LogAktivitas::log('upload_bukti_invoice', "Upload/update foto bukti transfer untuk order {$orderId}.");
+
+        return redirect()->route('siswa.bayar.invoice', $orderId)
+            ->with('success', 'Bukti pembayaran berhasil diunggah! Menunggu konfirmasi verifikasi admin.');
     }
 
     public function checkStatus($orderId)

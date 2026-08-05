@@ -9,7 +9,9 @@ use App\Models\User;
 use App\Models\LogAktivitas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SiswaTemplateExport;
+use App\Imports\SiswaImport;
 
 class SiswaController extends Controller
 {
@@ -33,6 +35,34 @@ class SiswaController extends Controller
         $kelas = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->get();
 
         return view('admin.siswa.index', compact('siswa', 'kelas'));
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new SiswaTemplateExport(), 'template_import_siswa.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file_excel' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        $import = new SiswaImport();
+        Excel::import($import, $request->file('file_excel'));
+
+        $msg = "Berhasil meng-import {$import->importedCount} data siswa!";
+        if (!empty($import->skippedRows)) {
+            $skippedMsg = implode('<br>', array_slice($import->skippedRows, 0, 10));
+            if (count($import->skippedRows) > 10) {
+                $skippedMsg .= '<br>...dan ' . (count($import->skippedRows) - 10) . ' baris lainnya.';
+            }
+            return redirect()->route('admin.siswa.index')
+                ->with('success', $msg)
+                ->with('warning', "Catatan Baris Dilewati:<br>" . $skippedMsg);
+        }
+
+        return redirect()->route('admin.siswa.index')->with('success', $msg);
     }
 
     public function create()

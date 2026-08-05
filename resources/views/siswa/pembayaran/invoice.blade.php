@@ -4,18 +4,16 @@
 @section('content')
 <div class="row justify-content-center">
     <div class="col-md-6">
-        
+
         <div class="alert alert-info border-info d-flex align-items-center shadow-sm" role="alert">
             <i class="bi bi-info-circle-fill fs-3 me-3 text-info"></i>
             <div>
-                <strong>Sandbox Mode Aktif</strong><br>
-                Sistem ini tidak butuh pembayaran uang sungguhan. Anda bisa menggunakan 
-                <a href="{{ route('sandbox.simulator', $transaksi->order_id) }}" target="_blank" class="alert-link">Sandbox Simulator Bank/E-Wallet</a>
-                untuk melakukan konfirmasi pembayaran otomatis.
+                <strong>Instruksi Pembayaran</strong><br>
+                Selesaikan pembayaran Anda menggunakan metode <strong>{{ $transaksi->metode_pembayaran }}</strong>.
             </div>
         </div>
 
-        <div class="card shadow-sm border-0 text-center">
+        <div class="card shadow-sm border-0 text-center mb-4">
             <div class="card-header bg-primary text-white py-3">
                 <h5 class="mb-0 fw-bold">Selesaikan Pembayaran Anda</h5>
             </div>
@@ -36,7 +34,6 @@
                     @if($transaksi->tipe === 'qris')
                         <h6 class="fw-bold text-dark mb-3">Scan QR Code Berikut:</h6>
                         
-                        <!-- Wrapper to capture as image -->
                         <div id="qrDownloadCard" class="mb-4 d-inline-block p-4 border rounded bg-white shadow-sm" style="min-width: 300px;">
                             <div class="mb-3">
                                 <h6 class="mb-0 text-primary fw-bold"><i class="bi bi-qr-code"></i> QRIS</h6>
@@ -61,7 +58,7 @@
                                 <i class="bi bi-box-arrow-up-right me-1"></i> Buka Simulator E-Wallet
                             </a>
                         </div>
-                    @else
+                    @elseif($transaksi->tipe === 'va')
                         <h6 class="fw-bold text-dark mb-2">Transfer ke Nomor Virtual Account:</h6>
                         <div class="d-flex align-items-center justify-content-center mt-3 mb-4">
                             <span class="fs-4 badge bg-light text-dark border p-3 font-monospace shadow-sm tracking-wide">
@@ -72,12 +69,69 @@
                         <a href="{{ route('sandbox.simulator', $transaksi->order_id) }}" target="_blank" class="btn btn-primary btn-sm mt-3">
                             <i class="bi bi-box-arrow-up-right me-1"></i> Buka Simulator M-Banking
                         </a>
+                    @else
+                        <h6 class="fw-bold text-dark mb-2">Nomor Rekening Tujuan:</h6>
+                        <div class="d-flex align-items-center justify-content-center mt-3 mb-3">
+                            <span class="fs-4 badge bg-light text-dark border p-3 font-monospace shadow-sm tracking-wide">
+                                {{ $transaksi->kode_pembayaran }}
+                            </span>
+                        </div>
+                        @if($metode && $metode->instruksi)
+                            <div class="alert alert-warning text-start small mb-4">
+                                <strong>Petunjuk:</strong><br>
+                                {{ $metode->instruksi }}
+                            </div>
+                        @endif
                     @endif
+
+                    <!-- Upload Bukti Transfer Form -->
+                    <div class="mt-4 pt-3 border-top text-start">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-earmark-image me-1"></i> Bukti Transfer</h6>
+                        
+                        @php
+                            $pembayaranFirst = $transaksi->pembayaran->first();
+                            $hasBukti = $pembayaranFirst && !empty($pembayaranFirst->file_bukti);
+                        @endphp
+
+                        @if($hasBukti)
+                            <div class="mb-3 p-3 border rounded bg-light">
+                                <span class="badge bg-success mb-2"><i class="bi bi-check-circle me-1"></i> Bukti Transfer Telah Diunggah</span>
+                                <div>
+                                    <a href="{{ asset('storage/' . $pembayaranFirst->file_bukti) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i> Lihat Foto Bukti
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
+
+                        <form action="{{ route('siswa.bayar.uploadBukti', $transaksi->order_id) }}" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            
+                            @if($errors->any())
+                                <div class="alert alert-danger py-2 px-3 small text-start">
+                                    <ul class="mb-0 ps-3">
+                                        @foreach($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                            <label class="form-label small fw-bold">{{ $hasBukti ? 'Ubah / Upload Ulang Bukti Transfer:' : 'Upload Bukti Transfer:' }}</label>
+                            <div class="input-group">
+                                <input type="file" name="file_bukti" class="form-control form-control-sm" accept="image/jpeg,image/png,image/jpg,application/pdf" required>
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-upload me-1"></i> Upload
+                                </button>
+                            </div>
+                            <small class="text-muted">Format: JPG, PNG, atau PDF (Maksimal 5MB).</small>
+                        </form>
+                    </div>
+
                 @endif
                 
             </div>
             <div class="card-footer text-muted small py-3">
-                Waktu expired: {{ $transaksi->expired_at->format('d M Y H:i') }}
+                Waktu expired: {{ $transaksi->expired_at ? $transaksi->expired_at->format('d M Y H:i') : '-' }}
             </div>
         </div>
     </div>
@@ -96,7 +150,7 @@
         btn.disabled = true;
 
         html2canvas(card, {
-            scale: 2, // better resolution
+            scale: 2,
             backgroundColor: "#ffffff",
             logging: false
         }).then(canvas => {
@@ -116,7 +170,6 @@
     }
 
     @if($transaksi->status === 'pending')
-    // Polling logic
     setInterval(() => {
         fetch("{{ route('siswa.bayar.status', $transaksi->order_id) }}")
             .then(res => res.json())
@@ -126,7 +179,7 @@
                 }
             })
             .catch(err => console.error('Gagal mengecek status', err));
-    }, 3000); // 3 seconds
+    }, 3000);
     @endif
 </script>
 @endpush

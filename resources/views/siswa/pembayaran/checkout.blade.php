@@ -9,9 +9,19 @@
                 <h5 class="mb-0 fw-bold"><i class="bi bi-cart-check me-2 text-primary"></i>Checkout Tagihan</h5>
             </div>
             
-            <form action="{{ route('siswa.bayar.process') }}" method="POST">
+            <form action="{{ route('siswa.bayar.process') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="card-body">
+                    @if($errors->any())
+                        <div class="alert alert-danger mb-4">
+                            <ul class="mb-0">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <h6 class="text-muted fw-bold mb-3">Tagihan Yang Akan Dibayar</h6>
                     
                     <ul class="list-group mb-4">
@@ -31,46 +41,42 @@
                     </ul>
 
                     <h6 class="text-muted fw-bold mb-3">Pilih Metode Pembayaran</h6>
-                    <div class="row g-3">
+                    <div class="row g-3 mb-4">
+                        @forelse($metodeList as $m)
                         <div class="col-md-6">
-                            <label class="card bg-light border p-3 rounded" style="cursor: pointer;">
+                            <label class="card bg-light border p-3 rounded h-100 position-relative" style="cursor: pointer;">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="metode_pembayaran" value="qris" required>
-                                    <label class="form-check-label ms-2 d-flex align-items-center fw-bold">
-                                        <i class="bi bi-qr-code-scan fs-4 text-dark me-2"></i> QRIS Dinamis
+                                    <input class="form-check-input metode-radio" type="radio" name="metode_pembayaran" value="{{ $m->kode }}" data-butuh-bukti="{{ $m->butuh_bukti ? '1' : '0' }}" required>
+                                    <label class="form-check-label ms-2 fw-bold d-block">
+                                        @if($m->kategori === 'qris')
+                                            <i class="bi bi-qr-code-scan fs-4 text-dark me-2"></i> {{ $m->nama }}
+                                        @elseif($m->kategori === 'va')
+                                            <i class="bi bi-bank fs-4 text-primary me-2"></i> {{ $m->nama }}
+                                        @else
+                                            <i class="bi bi-cash-coin fs-4 text-warning me-2"></i> {{ $m->nama }}
+                                        @endif
+                                        @if($m->butuh_bukti)
+                                            <span class="badge bg-primary rounded-pill ms-1 text-white" style="font-size:0.65rem;">Perlu Bukti Transfer</span>
+                                        @endif
                                     </label>
                                 </div>
                             </label>
                         </div>
-                        <div class="col-md-6">
-                            <label class="card bg-light border p-3 rounded" style="cursor: pointer;">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="metode_pembayaran" value="va_bca" required>
-                                    <label class="form-check-label ms-2 d-flex align-items-center fw-bold">
-                                        <i class="bi bi-bank fs-4 text-primary me-2"></i> BCA Virtual Account
-                                    </label>
-                                </div>
-                            </label>
+                        @empty
+                        <div class="col-12">
+                            <div class="alert alert-warning mb-0">Belum ada metode pembayaran yang aktif.</div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="card bg-light border p-3 rounded" style="cursor: pointer;">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="metode_pembayaran" value="va_mandiri" required>
-                                    <label class="form-check-label ms-2 d-flex align-items-center fw-bold">
-                                        <i class="bi bi-bank fs-4 text-warning me-2"></i> Mandiri VA
-                                    </label>
-                                </div>
+                        @endforelse
+                    </div>
+
+                    <!-- Dynamic File Upload Container -->
+                    <div class="card border-primary bg-primary bg-opacity-10 mb-3" id="buktiUploadContainer" style="display: none;">
+                        <div class="card-body">
+                            <label class="form-label fw-bold text-primary mb-1">
+                                <i class="bi bi-upload me-1"></i> Upload Bukti Transfer <span class="text-danger">*</span>
                             </label>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="card bg-light border p-3 rounded" style="cursor: pointer;">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="metode_pembayaran" value="va_bri" required>
-                                    <label class="form-check-label ms-2 d-flex align-items-center fw-bold">
-                                        <i class="bi bi-bank fs-4 text-info me-2"></i> BRI Briva
-                                    </label>
-                                </div>
-                            </label>
+                            <input type="file" name="file_bukti" id="inputFileBukti" class="form-control" accept="image/jpeg,image/png,image/jpg,application/pdf">
+                            <small class="text-muted d-block mt-1">Format: JPG, PNG, atau PDF (Maksimal 5MB).</small>
                         </div>
                     </div>
 
@@ -85,4 +91,37 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const radios = document.querySelectorAll('.metode-radio');
+        const uploadBox = document.getElementById('buktiUploadContainer');
+        const fileInput = document.getElementById('inputFileBukti');
+
+        function toggleUploadBox() {
+            let needsProof = false;
+            radios.forEach(r => {
+                if (r.checked && r.dataset.butuhBukti === '1') {
+                    needsProof = true;
+                }
+            });
+
+            if (needsProof) {
+                uploadBox.style.display = 'block';
+                fileInput.required = true;
+            } else {
+                uploadBox.style.display = 'none';
+                fileInput.required = false;
+            }
+        }
+
+        radios.forEach(r => {
+            r.addEventListener('change', toggleUploadBox);
+        });
+
+        toggleUploadBox();
+    });
+</script>
+@endpush
 @endsection

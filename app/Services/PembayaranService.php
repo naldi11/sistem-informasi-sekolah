@@ -12,46 +12,110 @@ class PembayaranService
 {
     /**
      * Verifikasi pembayaran dan update status tagihan ke lunas.
+     * Jika pembayaran berupa transaksi multi-bulan, verifikasi seluruh tagihan dalam transaksi tersebut secara sekaligus.
      */
     public function verifikasi(Tagihan $tagihan): void
     {
-        $tagihan->update(['status' => 'lunas']);
-        $tagihan->pembayaran->update([
-            'tanggal_verifikasi' => Carbon::now(),
-            'verified_by' => auth()->id(),
-        ]);
+        $pembayaran = $tagihan->pembayaran;
+        $trxId = $pembayaran ? $pembayaran->transaksi_sandbox_id : null;
 
-        Notifikasi::create([
-            'user_id' => $tagihan->siswa->user_id,
-            'pesan' => "Pembayaran bulan {$tagihan->nama_bulan} {$tagihan->tahun} telah dikonfirmasi. Status: Lunas. ✅",
-        ]);
+        if ($trxId) {
+            $pembayaranList = Pembayaran::where('transaksi_sandbox_id', $trxId)->get();
+            $bulanArr = [];
+            foreach ($pembayaranList as $p) {
+                $p->update([
+                    'tanggal_verifikasi' => Carbon::now(),
+                    'verified_by' => auth()->id(),
+                ]);
+                $p->tagihan->update(['status' => 'lunas']);
+                $bulanArr[] = $p->tagihan->nama_bulan . ' ' . $p->tagihan->tahun;
+            }
 
-        LogAktivitas::log(
-            'verifikasi_pembayaran',
-            "Memverifikasi pembayaran {$tagihan->siswa->nama} bulan {$tagihan->nama_bulan} {$tagihan->tahun} - Rp " . number_format((float) $tagihan->nominal, 0, ',', '.')
-        );
+            if ($pembayaran && $pembayaran->transaksiSandbox) {
+                $pembayaran->transaksiSandbox->update(['status' => 'sukses']);
+            }
+
+            $bulanStr = implode(', ', $bulanArr);
+            Notifikasi::create([
+                'user_id' => $tagihan->siswa->user_id,
+                'pesan' => "Pembayaran tagihan ($bulanStr) telah diverifikasi & dikonfirmasi Lunas. ✅",
+            ]);
+
+            LogAktivitas::log(
+                'verifikasi_pembayaran',
+                "Memverifikasi pembayaran sekaligus {$tagihan->siswa->nama} untuk ($bulanStr)"
+            );
+        } else {
+            $tagihan->update(['status' => 'lunas']);
+            if ($tagihan->pembayaran) {
+                $tagihan->pembayaran->update([
+                    'tanggal_verifikasi' => Carbon::now(),
+                    'verified_by' => auth()->id(),
+                ]);
+            }
+
+            Notifikasi::create([
+                'user_id' => $tagihan->siswa->user_id,
+                'pesan' => "Pembayaran bulan {$tagihan->nama_bulan} {$tagihan->tahun} telah dikonfirmasi. Status: Lunas. ✅",
+            ]);
+
+            LogAktivitas::log(
+                'verifikasi_pembayaran',
+                "Memverifikasi pembayaran {$tagihan->siswa->nama} bulan {$tagihan->nama_bulan} {$tagihan->tahun} - Rp " . number_format((float) $tagihan->nominal, 0, ',', '.')
+            );
+        }
     }
 
     /**
      * Tolak pembayaran siswa.
+     * Jika transaksi mencakup multi-bulan, tolak seluruh tagihan terkait sekaligus.
      */
     public function tolak(Tagihan $tagihan, ?string $catatan = null): void
     {
-        $tagihan->update(['status' => 'ditolak']);
+        $pembayaran = $tagihan->pembayaran;
+        $trxId = $pembayaran ? $pembayaran->transaksi_sandbox_id : null;
 
-        if ($catatan) {
-            $tagihan->pembayaran->update(['catatan' => $catatan]);
+        if ($trxId) {
+            $pembayaranList = Pembayaran::where('transaksi_sandbox_id', $trxId)->get();
+            $bulanArr = [];
+            foreach ($pembayaranList as $p) {
+                if ($catatan) {
+                    $p->update(['catatan' => $catatan]);
+                }
+                $p->tagihan->update(['status' => 'ditolak']);
+                $bulanArr[] = $p->tagihan->nama_bulan . ' ' . $p->tagihan->tahun;
+            }
+
+            if ($pembayaran && $pembayaran->transaksiSandbox) {
+                $pembayaran->transaksiSandbox->update(['status' => 'gagal']);
+            }
+
+            $bulanStr = implode(', ', $bulanArr);
+            Notifikasi::create([
+                'user_id' => $tagihan->siswa->user_id,
+                'pesan' => "Pembayaran tagihan ($bulanStr) ditolak. Silakan upload ulang bukti transfer. ❌",
+            ]);
+
+            LogAktivitas::log(
+                'tolak_pembayaran',
+                "Menolak pembayaran sekaligus {$tagihan->siswa->nama} untuk ($bulanStr)"
+            );
+        } else {
+            $tagihan->update(['status' => 'ditolak']);
+            if ($tagihan->pembayaran && $catatan) {
+                $tagihan->pembayaran->update(['catatan' => $catatan]);
+            }
+
+            Notifikasi::create([
+                'user_id' => $tagihan->siswa->user_id,
+                'pesan' => "Pembayaran bulan {$tagihan->nama_bulan} {$tagihan->tahun} ditolak. Silakan upload ulang bukti transfer. ❌",
+            ]);
+
+            LogAktivitas::log(
+                'tolak_pembayaran',
+                "Menolak pembayaran {$tagihan->siswa->nama} bulan {$tagihan->nama_bulan} {$tagihan->tahun}"
+            );
         }
-
-        Notifikasi::create([
-            'user_id' => $tagihan->siswa->user_id,
-            'pesan' => "Pembayaran bulan {$tagihan->nama_bulan} {$tagihan->tahun} ditolak. Silakan upload ulang bukti transfer. ❌",
-        ]);
-
-        LogAktivitas::log(
-            'tolak_pembayaran',
-            "Menolak pembayaran {$tagihan->siswa->nama} bulan {$tagihan->nama_bulan} {$tagihan->tahun}"
-        );
     }
 
     /**
@@ -59,7 +123,6 @@ class PembayaranService
      */
     public function uploadBukti(Tagihan $tagihan, string $filePath): void
     {
-        // Hapus pembayaran lama jika ada (untuk re-upload setelah ditolak)
         $tagihan->pembayaran()->delete();
 
         Pembayaran::create([
@@ -70,7 +133,6 @@ class PembayaranService
 
         $tagihan->update(['status' => 'menunggu_verifikasi']);
 
-        // Notifikasi ke semua admin
         $admins = \App\Models\User::where('role', 'admin')->get();
         foreach ($admins as $admin) {
             Notifikasi::create([

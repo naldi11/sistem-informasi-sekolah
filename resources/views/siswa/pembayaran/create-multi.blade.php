@@ -49,9 +49,6 @@
             <div class="card">
                 <div class="card-header py-3"><i class="bi bi-upload me-2"></i>Upload Bukti Transfer</div>
                 <div class="card-body">
-                    @if(session('error'))
-                        <div class="alert alert-danger py-2">{{ session('error') }}</div>
-                    @endif
                     @if($errors->any())
                         <div class="alert alert-danger py-2">{{ $errors->first() }}</div>
                     @endif

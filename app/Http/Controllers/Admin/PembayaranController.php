@@ -19,8 +19,13 @@ class PembayaranController extends Controller
     {
         $tab = $request->get('tab', 'semua');
 
-        $query = Tagihan::with(['siswa.kelas', 'pembayaran'])
-            ->whereHas('pembayaran');
+        $query = Tagihan::with(['siswa.kelas', 'pembayaran.transaksiSandbox'])
+            ->whereHas('pembayaran')
+            ->whereIn('id', function ($q) {
+                $q->selectRaw('MIN(tagihan_id)')
+                  ->from('pembayaran')
+                  ->groupByRaw('IFNULL(transaksi_sandbox_id, id)');
+            });
 
         if ($tab === 'menunggu') {
             $query->where('status', 'menunggu_verifikasi');
@@ -51,7 +56,7 @@ class PembayaranController extends Controller
 
     public function show(Tagihan $tagihan)
     {
-        $tagihan->load(['siswa.kelas', 'pembayaran', 'spp']);
+        $tagihan->load(['siswa.kelas', 'pembayaran.transaksiSandbox', 'spp']);
         return view('admin.pembayaran.show', compact('tagihan'));
     }
 
@@ -59,7 +64,7 @@ class PembayaranController extends Controller
     {
         $this->pembayaranService->verifikasi($tagihan);
         return redirect()->route('admin.pembayaran.index', ['tab' => 'menunggu'])
-            ->with('success', 'Pembayaran berhasil diverifikasi!');
+            ->with('success', 'Pembayaran berhasil diverifikasi secara sekaligus!');
     }
 
     public function tolak(Request $request, Tagihan $tagihan)
