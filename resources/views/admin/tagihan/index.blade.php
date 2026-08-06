@@ -18,6 +18,9 @@
         <div class="card-body py-2">
             <form method="GET" class="row g-2 align-items-end">
                 <div class="col-md-2">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari Nama Siswa..." value="{{ request('search') }}">
+                </div>
+                <div class="col-md-2">
                     <select name="bulan" class="form-select form-select-sm">
                         <option value="">Semua Bulan</option>
                         @for($m = 1; $m <= 12; $m++)
@@ -28,6 +31,13 @@
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <select name="semester" class="form-select form-select-sm">
+                        <option value="">Semua Semester</option>
+                        <option value="1" {{ request('semester') == '1' ? 'selected' : '' }}>Semester 1 (Ganjil / Jul-Des)</option>
+                        <option value="2" {{ request('semester') == '2' ? 'selected' : '' }}>Semester 2 (Genap / Jan-Jun)</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
                     <input type="number" name="tahun" class="form-control form-control-sm" placeholder="Tahun"
                         value="{{ request('tahun') }}">
                 </div>
@@ -51,7 +61,7 @@
                         <option value="ditolak" {{ request('status') == 'ditolak' ? 'selected' : '' }}>Ditolak</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <button class="btn btn-primary btn-sm w-100"><i class="bi bi-search me-1"></i>Filter</button>
                 </div>
             </form>

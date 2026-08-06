@@ -96,14 +96,11 @@ class PembayaranController extends Controller
         
         $tipe = $metode ? $metode->kategori : ($request->metode_pembayaran === 'qris' ? 'qris' : 'va');
         
-        // Generate Mock Payment Code / Rekening
+        // Generate Payment Code / Rekening sesuai setting Admin
         if ($tipe === 'qris') {
             $kodePembayaran = route('sandbox.simulator', ['order_id' => $orderId]);
-        } elseif ($tipe === 'va') {
-            $prefix = $metode ? $metode->nomor_rekening : '8000';
-            $kodePembayaran = ($prefix ?? '8000') . $siswa->nis;
         } else {
-            $kodePembayaran = ($metode->nomor_rekening ?? '-') . ' (' . ($metode->pemilik_rekening ?? 'Sekolah') . ')';
+            $kodePembayaran = ($metode && !empty($metode->nomor_rekening)) ? $metode->nomor_rekening : ($siswa->nis ?? '8000');
         }
 
         // Upload bukti jika ada

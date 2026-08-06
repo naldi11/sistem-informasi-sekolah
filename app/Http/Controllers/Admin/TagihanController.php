@@ -19,8 +19,20 @@ class TagihanController extends Controller
     {
         $query = Tagihan::with(['siswa.kelas', 'spp']);
 
+        if ($request->filled('search')) {
+            $query->whereHas('siswa', fn($q) => $q->where('nama', 'like', '%' . $request->search . '%')->orWhere('nis', 'like', '%' . $request->search . '%'));
+        }
         if ($request->filled('bulan')) {
             $query->where('bulan', $request->bulan);
+        }
+        if ($request->filled('semester')) {
+            if ($request->semester == '1') {
+                // Semester 1 (Ganjil): Juli (7) s/d Desember (12)
+                $query->whereBetween('bulan', [7, 12]);
+            } elseif ($request->semester == '2') {
+                // Semester 2 (Genap): Januari (1) s/d Juni (6)
+                $query->whereBetween('bulan', [1, 6]);
+            }
         }
         if ($request->filled('tahun')) {
             $query->where('tahun', $request->tahun);

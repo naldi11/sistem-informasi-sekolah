@@ -40,7 +40,13 @@
     @endif
 
     <div class="row g-3">
-        <!-- Bukti Transfer Side -->
+        @php
+            $metodeKategori = strtolower($pembayaran?->transaksiSandbox?->tipe ?? '');
+            $isQris = $metodeKategori === 'qris' || str_contains(strtolower($pembayaran?->transaksiSandbox?->metode_pembayaran ?? ''), 'qris');
+        @endphp
+
+        <!-- Bukti Transfer Side (Hidden if QRIS) -->
+        @if(!$isQris)
         <div class="col-md-5">
             <div class="card shadow-sm border-0">
                 <div class="card-header py-3 bg-white fw-bold"><i class="bi bi-image me-1"></i> Bukti Transfer / Resi</div>
@@ -74,9 +80,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- Detail Tagihan Side -->
-        <div class="col-md-7">
+        <div class="{{ $isQris ? 'col-md-12' : 'col-md-7' }}">
             <div class="card shadow-sm border-0 mb-3">
                 <div class="card-header py-3 bg-white fw-bold"><i class="bi bi-info-circle me-1"></i> Detail Pembayaran</div>
                 <div class="card-body">
