@@ -107,7 +107,7 @@
                 <label class="form-label fw-medium" style="font-size:0.85rem;">Username / NIS</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input type="text" name="username" class="form-control" placeholder="Masukkan username"
+                    <input type="text" name="username" class="form-control" placeholder="Masukkan Username / NIS"
                         value="{{ old('username') }}" required autofocus>
                 </div>
             </div>
