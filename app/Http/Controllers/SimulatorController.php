@@ -3,14 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\TransaksiSandbox;
-use App\Models\Tagihan;
-use App\Models\Pembayaran;
-use App\Models\Notifikasi;
+use App\Services\PembayaranService;
 use App\Models\LogAktivitas;
 use Illuminate\Http\Request;
 
 class SimulatorController extends Controller
 {
+    public function __construct(
+        private PembayaranService $pembayaranService
+    ) {}
+
     public function index($orderId)
     {
         $transaksi = TransaksiSandbox::where('order_id', $orderId)->firstOrFail();
@@ -23,8 +25,19 @@ class SimulatorController extends Controller
     {
         $transaksi = TransaksiSandbox::where('order_id', $orderId)->firstOrFail();
 
-        LogAktivitas::log('sandbox_webhook', "Simulasi pengiriman transfer/QR untuk Order ID {$orderId} sejumlah Rp {$transaksi->total_nominal}");
+        if ($transaksi->status === 'sukses') {
+            return redirect()->route('sandbox.simulator', $orderId)->with('success', 'Pembayaran ini sudah berhasil dikonfirmasi sebelumnya.');
+        }
 
-        return redirect()->route('sandbox.simulator', $orderId)->with('info', 'Pembayaran QR/Transfer telah dikonfirmasi di simulator. Harap upload foto bukti transfer (.jpg) di halaman Invoice untuk diverifikasi secara manual oleh Admin.');
+        $pembayaranFirst = $transaksi->pembayaran->first();
+        if ($pembayaranFirst && $pembayaranFirst->tagihan) {
+            $this->pembayaranService->verifikasi($pembayaranFirst->tagihan);
+        } else {
+            $transaksi->update(['status' => 'sukses']);
+        }
+
+        LogAktivitas::log('sandbox_webhook', "Simulasi pengiriman transfer/QR untuk Order ID {$orderId} sejumlah Rp {$transaksi->total_nominal} berhasil dikonfirmasi.");
+
+        return redirect()->route('sandbox.simulator', $orderId)->with('success', 'Pembayaran berhasil dikonfirmasi melalui simulator! Tagihan Anda telah Lunas.');
     }
 }

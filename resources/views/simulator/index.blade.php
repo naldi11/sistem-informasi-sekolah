@@ -45,8 +45,14 @@
                 <div class="alert alert-success">
                     <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
                     <div class="mt-2 text-center text-sm">
-                        <i>Silakan tutup tab ini.</i>
+                        <small class="text-muted"><i>Silakan tutup halaman simulator ini.</i></small>
                     </div>
+                </div>
+            @endif
+
+            @if(session('info'))
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill me-2"></i>{{ session('info') }}
                 </div>
             @endif
 
@@ -92,11 +98,11 @@
                         <small class="text-muted"><i class="bi bi-shield-lock-fill me-1"></i>Secure Sandbox Environment</small>
                     </div>
                 </form>
-            @elseif($transaksi->status === 'sukses' && !session('success'))
+            @elseif($transaksi->status === 'sukses')
                 <div class="text-center py-4">
                     <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
                     <h4 class="mt-3 text-success fw-bold">Transaksi Sukses!</h4>
-                    <p class="text-muted">Tagihan ini sudah diselesaikan.</p>
+                    <p class="text-muted">Pembayaran telah berhasil diverifikasi dan diselesaikan.</p>
                 </div>
             @endif
         </div>
