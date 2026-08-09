@@ -278,9 +278,18 @@
     </div>
 
     <div class="print-actions">
-        <button onclick="window.close()" class="btn-action btn-close">Tutup</button>
+        <button onclick="closeTab()" class="btn-action btn-close">Tutup</button>
         <button onclick="window.print()" class="btn-action btn-print">Cetak Struk</button>
     </div>
+
+    <script>
+        function closeTab() {
+            window.close();
+            setTimeout(function() {
+                window.location.href = "{{ route('siswa.bayar.invoice', $transaksi->order_id) }}";
+            }, 300);
+        }
+    </script>
 
 </body>
 </html>
