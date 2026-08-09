@@ -177,7 +177,19 @@
                                     <td class="px-2 px-sm-3 text-center"><span class="badge bg-{{ $t->status_badge }} responsive-text" style="font-weight: 500;">{{ $t->status_label }}</span></td>
                                     <td style="min-width: 120px;" class="px-2 px-sm-3">
                                         @if($t->pembayaran && $t->pembayaran->tanggal_verifikasi)
-                                            <small class="text-muted d-block responsive-text"><i class="bi bi-check-circle-fill text-success me-1"></i>Selesai: {{ \Carbon\Carbon::parse($t->pembayaran->tanggal_verifikasi)->format('d/m/Y') }}</small>
+                                            <small class="text-muted d-block responsive-text mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Selesai: {{ \Carbon\Carbon::parse($t->pembayaran->tanggal_verifikasi)->format('d/m/Y') }}</small>
+                                            @if($t->pembayaran->transaksiSandbox)
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <a href="{{ route('siswa.bayar.invoice', $t->pembayaran->transaksiSandbox->order_id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size: 0.65rem;" title="Preview Detail">
+                                                        <i class="bi bi-eye"></i> Detail
+                                                    </a>
+                                                    @if($t->pembayaran->transaksiSandbox->tipe === 'qris')
+                                                        <a href="{{ route('siswa.bayar.print', $t->pembayaran->transaksiSandbox->order_id) }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill" style="font-size: 0.65rem;" title="Cetak Struk">
+                                                            <i class="bi bi-printer"></i> Cetak
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                            @endif
                                         @elseif($t->status === 'menunggu_verifikasi' && $t->pembayaran && $t->pembayaran->transaksiSandbox)
                                             <a href="{{ route('siswa.bayar.invoice', $t->pembayaran->transaksiSandbox->order_id) }}" class="btn btn-sm btn-info text-white py-1 px-2 rounded-pill mt-1" style="font-size: 0.70rem;">
                                                 Lanjut Bayar <i class="bi bi-arrow-right"></i>
