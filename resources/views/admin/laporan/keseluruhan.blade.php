@@ -4,53 +4,70 @@
 @section('content')
     <h5 class="fw-bold mb-3"><i class="bi bi-collection-fill me-2 text-primary"></i>Laporan Pembayaran Keseluruhan</h5>
 
-    <div class="card mb-3">
-        <div class="card-body py-2">
-            <form method="GET" class="row g-2 align-items-end">
-                <div class="col-md-2">
-                    <label class="form-label" style="font-size:0.8rem;">Cari Siswa / NIS</label>
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Nama / NIS..." value="{{ request('search') }}">
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-body">
+            <form method="GET">
+                <div class="row g-2">
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label fw-semibold text-muted" style="font-size:0.8rem;"><i class="bi bi-search me-1"></i>Cari Siswa / NIS</label>
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Nama / NIS..." value="{{ request('search') }}">
+                    </div>
+                    <div class="col-md-4 col-lg-2">
+                        <label class="form-label fw-semibold text-muted" style="font-size:0.8rem;"><i class="bi bi-building me-1"></i>Kelas</label>
+                        <select name="kelas_id" class="form-select form-select-sm">
+                            <option value="">Semua Kelas</option>
+                            @foreach($kelasList as $k)
+                                <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                                    {{ $k->nama_kelas }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4 col-lg-2">
+                        <label class="form-label fw-semibold text-muted" style="font-size:0.8rem;"><i class="bi bi-calendar-month me-1"></i>Bulan</label>
+                        <select name="bulan" class="form-select form-select-sm">
+                            <option value="">Semua Bulan</option>
+                            @for($m = 1; $m <= 12; $m++)
+                                <option value="{{ $m }}" {{ request('bulan') == $m ? 'selected' : '' }}>
+                                    {{ \Carbon\Carbon::create(null, $m)->translatedFormat('F') }}
+                                </option>
+                            @endfor
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-lg-2">
+                        <label class="form-label fw-semibold text-muted" style="font-size:0.8rem;"><i class="bi bi-calendar-event me-1"></i>Tahun</label>
+                        <input type="number" name="tahun" class="form-control form-control-sm" value="{{ request('tahun') }}" placeholder="Semua Tahun">
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label fw-semibold text-muted" style="font-size:0.8rem;"><i class="bi bi-funnel me-1"></i>Status</label>
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="">Semua Status</option>
+                            <option value="lunas" {{ request('status') == 'lunas' ? 'selected' : '' }}>Lunas</option>
+                            <option value="belum_bayar" {{ request('status') == 'belum_bayar' ? 'selected' : '' }}>Belum Bayar</option>
+                            <option value="menunggu_verifikasi" {{ request('status') == 'menunggu_verifikasi' ? 'selected' : '' }}>Menunggu</option>
+                            <option value="ditolak" {{ request('status') == 'ditolak' ? 'selected' : '' }}>Ditolak</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label" style="font-size:0.8rem;">Kelas</label>
-                    <select name="kelas_id" class="form-select form-select-sm">
-                        <option value="">Semua Kelas</option>
-                        @foreach($kelasList as $k)
-                            <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                                {{ $k->nama_kelas }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" style="font-size:0.8rem;">Bulan</label>
-                    <select name="bulan" class="form-select form-select-sm">
-                        <option value="">Semua Bulan</option>
-                        @for($m = 1; $m <= 12; $m++)
-                            <option value="{{ $m }}" {{ request('bulan') == $m ? 'selected' : '' }}>
-                                {{ \Carbon\Carbon::create(null, $m)->translatedFormat('F') }}
-                            </option>
-                        @endfor
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" style="font-size:0.8rem;">Tahun</label>
-                    <input type="number" name="tahun" class="form-control form-control-sm" value="{{ request('tahun') }}" placeholder="Semua Tahun">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label" style="font-size:0.8rem;">Status</label>
-                    <select name="status" class="form-select form-select-sm">
-                        <option value="">Semua Status</option>
-                        <option value="lunas" {{ request('status') == 'lunas' ? 'selected' : '' }}>Lunas</option>
-                        <option value="belum_bayar" {{ request('status') == 'belum_bayar' ? 'selected' : '' }}>Belum Bayar</option>
-                        <option value="menunggu_verifikasi" {{ request('status') == 'menunggu_verifikasi' ? 'selected' : '' }}>Menunggu</option>
-                        <option value="ditolak" {{ request('status') == 'ditolak' ? 'selected' : '' }}>Ditolak</option>
-                    </select>
-                </div>
-                <div class="col-md-2 text-end">
-                    <button class="btn btn-primary btn-sm me-1"><i class="bi bi-search me-1"></i>Filter</button>
-                    <a href="{{ route('admin.laporan.exportPdf', array_merge(['type' => 'keseluruhan'], request()->all())) }}" class="btn btn-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>PDF</a>
-                    <a href="{{ route('admin.laporan.exportExcel', array_merge(['type' => 'keseluruhan'], request()->all())) }}" class="btn btn-success btn-sm"><i class="bi bi-file-excel me-1"></i>Excel</a>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-top pt-2 mt-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm px-3 fw-medium">
+                            <i class="bi bi-filter me-1"></i>Terapkan Filter
+                        </button>
+                        <a href="{{ route('admin.laporan.keseluruhan') }}" class="btn btn-light btn-sm px-3 border text-secondary">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        </a>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small me-1">Export Laporan:</span>
+                        <a href="{{ route('admin.laporan.exportPdf', array_merge(['type' => 'keseluruhan'], request()->all())) }}" class="btn btn-danger btn-sm px-3 fw-medium">
+                            <i class="bi bi-file-pdf-fill me-1"></i>Export PDF
+                        </a>
+                        <a href="{{ route('admin.laporan.exportExcel', array_merge(['type' => 'keseluruhan'], request()->all())) }}" class="btn btn-success btn-sm px-3 fw-medium">
+                            <i class="bi bi-file-excel-fill me-1"></i>Export Excel
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>

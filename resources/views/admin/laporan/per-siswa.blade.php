@@ -4,30 +4,44 @@
 @section('content')
     <h5 class="fw-bold mb-3">Laporan Pembayaran Per Siswa</h5>
 
-    <div class="card mb-3">
-        <div class="card-body py-2">
-            <form method="GET" class="row g-2 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label" style="font-size:0.8rem;">Pilih Siswa</label>
-                    <select name="siswa_id" class="form-select form-select-sm">
-                        <option value="">-- Pilih Siswa --</option>
-                        @foreach($siswaList as $s)
-                            <option value="{{ $s->id }}" {{ request('siswa_id') == $s->id ? 'selected' : '' }}>{{ $s->nis }} -
-                                {{ $s->nama }} ({{ $s->kelas->nama_kelas }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-primary btn-sm w-100">Tampilkan</button>
-                </div>
-                @if($siswa)
-                    <div class="col-md-4 text-end ms-auto">
-                        <a href="{{ route('admin.laporan.exportPdf', ['type' => 'per-siswa', 'siswa_id' => $siswa->id]) }}"
-                            class="btn btn-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>PDF</a>
-                        <a href="{{ route('admin.laporan.exportExcel', ['type' => 'per-siswa', 'siswa_id' => $siswa->id]) }}"
-                            class="btn btn-success btn-sm"><i class="bi bi-file-excel me-1"></i>Excel</a>
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-body">
+            <form method="GET">
+                <div class="row g-2">
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold text-muted" style="font-size:0.8rem;"><i class="bi bi-person me-1"></i>Pilih Siswa <span class="text-danger">*</span></label>
+                        <select name="siswa_id" class="form-select form-select-sm" required>
+                            <option value="">-- Pilih Siswa --</option>
+                            @foreach($siswaList as $s)
+                                <option value="{{ $s->id }}" {{ request('siswa_id') == $s->id ? 'selected' : '' }}>
+                                    {{ $s->nis }} - {{ $s->nama }} ({{ $s->kelas->nama_kelas ?? '-' }})
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
-                @endif
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-top pt-2 mt-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm px-3 fw-medium">
+                            <i class="bi bi-filter me-1"></i>Tampilkan Laporan
+                        </button>
+                        <a href="{{ route('admin.laporan.perSiswa') }}" class="btn btn-light btn-sm px-3 border text-secondary">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                        </a>
+                    </div>
+                    @if($siswa)
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small me-1">Export Laporan:</span>
+                        <a href="{{ route('admin.laporan.exportPdf', ['type' => 'per-siswa', 'siswa_id' => $siswa->id]) }}" class="btn btn-danger btn-sm px-3 fw-medium">
+                            <i class="bi bi-file-pdf-fill me-1"></i>Export PDF
+                        </a>
+                        <a href="{{ route('admin.laporan.exportExcel', ['type' => 'per-siswa', 'siswa_id' => $siswa->id]) }}" class="btn btn-success btn-sm px-3 fw-medium">
+                            <i class="bi bi-file-excel-fill me-1"></i>Export Excel
+                        </a>
+                    </div>
+                    @endif
+                </div>
             </form>
         </div>
     </div>
