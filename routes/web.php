@@ -93,6 +93,7 @@ Route::middleware(['auth', 'first_login', 'siswa'])->prefix('siswa')->name('sisw
     Route::post('/invoice/{order_id}/upload-bukti', [SiswaPembayaranController::class, 'uploadBuktiInvoice'])->name('bayar.uploadBukti');
     Route::post('/invoice/{order_id}/batal', [SiswaPembayaranController::class, 'batalInvoice'])->name('bayar.batal');
     Route::get('/invoice/{order_id}/status', [SiswaPembayaranController::class, 'checkStatus'])->name('bayar.status');
+    Route::get('/invoice/{order_id}/print', [SiswaPembayaranController::class, 'printStruk'])->name('bayar.print');
 });
 
 // Simulator Routes (Public / Sandbox)

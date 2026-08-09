@@ -24,7 +24,10 @@
                         <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
                         <h4 class="mt-3 text-success fw-bold">Pembayaran Diterima!</h4>
                         <p class="text-muted">Terima kasih, pembayaran telah berhasil diverifikasi.</p>
-                        <a href="{{ route('siswa.dashboard') }}" class="btn btn-outline-primary mt-2">Kembali ke Dashboard</a>
+                        <div class="d-flex justify-content-center gap-2 mt-3">
+                            <a href="{{ route('siswa.dashboard') }}" class="btn btn-outline-secondary">Kembali ke Dashboard</a>
+                            <a href="{{ route('siswa.bayar.print', $transaksi->order_id) }}" target="_blank" class="btn btn-primary"><i class="bi bi-printer me-1"></i> Cetak Struk</a>
+                        </div>
                     </div>
                 @else
                     <h6 class="text-muted mb-1">Total Tagihan</h6>

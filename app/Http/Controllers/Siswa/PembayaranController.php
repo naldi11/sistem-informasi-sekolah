@@ -256,4 +256,18 @@ class PembayaranController extends Controller
 
         return response()->json(['status' => $transaksi->status]);
     }
+
+    public function printStruk($orderId)
+    {
+        $siswa = auth()->user()->siswa;
+        $transaksi = TransaksiSandbox::where('order_id', $orderId)
+            ->where('siswa_id', $siswa->id)
+            ->firstOrFail();
+
+        if ($transaksi->status !== 'sukses') {
+            return redirect()->route('siswa.bayar.invoice', $orderId)->with('error', 'Hanya tagihan yang lunas yang dapat dicetak.');
+        }
+
+        return view('siswa.pembayaran.print', compact('transaksi', 'siswa'));
+    }
 }

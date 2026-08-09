@@ -30,14 +30,17 @@ class SimulatorController extends Controller
         }
 
         $pembayaranFirst = $transaksi->pembayaran->first();
-        if ($pembayaranFirst && $pembayaranFirst->tagihan) {
-            $this->pembayaranService->verifikasi($pembayaranFirst->tagihan);
+        if ($transaksi->tipe === 'qris') {
+            LogAktivitas::log('sandbox_webhook', "Simulasi klik bayar QRIS untuk Order ID {$orderId} sejumlah Rp {$transaksi->total_nominal}. Menunggu upload bukti user.");
+            return redirect()->route('sandbox.simulator', $orderId)->with('success', 'Silakan tutup simulator ini dan upload bukti pembayaran Anda di halaman invoice (Sistem membutuhkan foto bukti transfer untuk memverifikasi pembayaran QRIS Anda).');
         } else {
-            $transaksi->update(['status' => 'sukses']);
+            if ($pembayaranFirst && $pembayaranFirst->tagihan) {
+                $this->pembayaranService->verifikasi($pembayaranFirst->tagihan);
+            } else {
+                $transaksi->update(['status' => 'sukses']);
+            }
+            LogAktivitas::log('sandbox_webhook', "Simulasi pengiriman transfer/QR untuk Order ID {$orderId} sejumlah Rp {$transaksi->total_nominal} berhasil dikonfirmasi.");
+            return redirect()->route('sandbox.simulator', $orderId)->with('success', 'Pembayaran berhasil dikonfirmasi melalui simulator! Tagihan Anda telah Lunas.');
         }
-
-        LogAktivitas::log('sandbox_webhook', "Simulasi pengiriman transfer/QR untuk Order ID {$orderId} sejumlah Rp {$transaksi->total_nominal} berhasil dikonfirmasi.");
-
-        return redirect()->route('sandbox.simulator', $orderId)->with('success', 'Pembayaran berhasil dikonfirmasi melalui simulator! Tagihan Anda telah Lunas.');
     }
 }
