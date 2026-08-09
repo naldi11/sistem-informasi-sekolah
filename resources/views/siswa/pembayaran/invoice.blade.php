@@ -116,14 +116,14 @@
                                     </ul>
                                 </div>
                             @endif
-                            <label class="form-label small fw-bold">{{ $hasBukti ? 'Ubah / Upload Ulang Bukti Transfer:' : 'Upload Bukti Transfer:' }}</label>
+                            <label class="form-label small fw-bold">{{ $hasBukti ? 'Ubah / Upload Ulang Bukti Transfer (.jpg):' : 'Upload Bukti Transfer (.jpg):' }}</label>
                             <div class="input-group">
-                                <input type="file" name="file_bukti" class="form-control form-control-sm" accept="image/jpeg,image/png,image/jpg,application/pdf" required>
+                                <input type="file" name="file_bukti" class="form-control form-control-sm" accept="image/jpeg,image/jpg,.jpg,.jpeg" required>
                                 <button type="submit" class="btn btn-sm btn-primary">
                                     <i class="bi bi-upload me-1"></i> Upload
                                 </button>
                             </div>
-                            <small class="text-muted">Format: JPG, PNG, atau PDF (Maksimal 5MB).</small>
+                            <small class="text-muted">Format: File JPG / JPEG sahaja (Maksimal 5MB). Memerlukan verifikasi admin.</small>
                         </form>
                     </div>
 

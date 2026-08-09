@@ -102,4 +102,28 @@ class TagihanController extends Controller
         return redirect()->route('admin.tagihan.index')
             ->with('success', "Berhasil auto-generate {$result['count']} tagihan tunggakan. Detail: {$detailMsg}");
     }
+
+    public function autoLunasPrior(Request $request)
+    {
+        $request->validate([
+            'mulai_bulan' => 'required|integer|min:1|max:12',
+            'tahun' => 'required|integer|min:2020|max:2030',
+            'siswa_ids' => 'nullable|array',
+            'siswa_ids.*' => 'exists:siswa,id',
+        ]);
+
+        $mulaiBulan = (int) $request->mulai_bulan;
+        $tahun = (int) $request->tahun;
+        $siswaIds = $request->siswa_ids ?? [];
+
+        $count = $this->tagihanService->autoLunasPriorMonths($mulaiBulan, $tahun, $siswaIds);
+
+        $namaMulai = \Carbon\Carbon::create(null, $mulaiBulan)->translatedFormat('F');
+        $targetLabel = empty($siswaIds) ? 'semua siswa' : count($siswaIds) . ' siswa terpilih';
+
+        LogAktivitas::log('auto_lunas_prior', "Pelunasan otomatis bulan sebelum {$namaMulai} {$tahun} untuk {$targetLabel}. Total: {$count} tagihan dilunaskan.");
+
+        return redirect()->route('admin.tagihan.index')
+            ->with('success', "Berhasil melunaskan {$count} tagihan bulan-bulan sebelum {$namaMulai} {$tahun} untuk {$targetLabel}. Siswa kini mulai pembayaran di bulan {$namaMulai}.");
+    }
 }

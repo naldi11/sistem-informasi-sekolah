@@ -24,6 +24,13 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        $userExists = \App\Models\User::where('username', $request->username)->exists();
+
+        if (!$userExists) {
+            LogAktivitas::log('login_gagal', 'Login gagal, NIS/username tidak terdaftar: ' . $request->username, null);
+            return back()->withErrors(['username' => 'Maaf NIS anda tidak terdaftar di sistem.'])->withInput();
+        }
+
         $credentials = $request->only('username', 'password');
 
         if (Auth::attempt($credentials)) {

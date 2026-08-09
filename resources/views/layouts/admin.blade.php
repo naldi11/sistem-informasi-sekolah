@@ -390,6 +390,14 @@
                 class="{{ request()->routeIs('admin.laporan.perBulan') ? 'active' : '' }}">
                 <i class="bi bi-calendar-month"></i> Per Bulan
             </a>
+            <a href="{{ route('admin.laporan.perKelas') }}"
+                class="{{ request()->routeIs('admin.laporan.perKelas') ? 'active' : '' }}">
+                <i class="bi bi-door-open"></i> Per Kelas
+            </a>
+            <a href="{{ route('admin.laporan.keseluruhan') }}"
+                class="{{ request()->routeIs('admin.laporan.keseluruhan') ? 'active' : '' }}">
+                <i class="bi bi-collection-fill"></i> Keseluruhan
+            </a>
             <a href="{{ route('admin.laporan.tunggakan') }}"
                 class="{{ request()->routeIs('admin.laporan.tunggakan') ? 'active' : '' }}">
                 <i class="bi bi-exclamation-triangle"></i> Tunggakan

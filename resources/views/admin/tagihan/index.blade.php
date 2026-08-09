@@ -5,6 +5,9 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0">Manajemen Tagihan</h5>
         <div class="d-flex gap-2">
+            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#autoLunasModal">
+                <i class="bi bi-check-circle-fill me-1"></i>Pelunasan Otomatis Bulan Awal
+            </button>
             <form method="POST" action="{{ route('admin.tagihan.autoGenerate') }}">
                 @csrf
                 <button class="btn btn-warning btn-sm"><i class="bi bi-magic me-1"></i>Auto-Detect Tunggakan</button>
@@ -204,6 +207,45 @@
             </form>
         </div>
     </div>
+
+    <!-- Auto Lunas Modal -->
+    <div class="modal fade" id="autoLunasModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('admin.tagihan.autoLunasPrior') }}">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="bi bi-check-circle-fill me-2"></i>Pelunasan Otomatis Bulan Awal</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info py-2" style="font-size:0.85rem;">
+                            <i class="bi bi-info-circle me-1"></i> Fitur ini digunakan jika sistem mulai dipakai di pertengahan semester (misal mulai Agustus). Bulan-bulan sebelumnya di semester yang sama (misal Juli) akan otomatis ditandai <strong>LUNAS</strong> untuk siswa.
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" style="font-size:0.85rem;">Sistem Mulai Digunakan Pada Bulan</label>
+                            <select name="mulai_bulan" class="form-select form-select-sm" required>
+                                @for($m = 1; $m <= 12; $m++)
+                                    <option value="{{ $m }}" {{ $m == 8 ? 'selected' : '' }}>
+                                        {{ \Carbon\Carbon::create(null, $m)->translatedFormat('F') }}
+                                    </option>
+                                @endfor
+                            </select>
+                            <small class="text-muted" style="font-size:0.75rem;">Bulan-bulan sebelum bulan pilihan ini dalam semester berjalan akan otomatis dilunaskan.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" style="font-size:0.85rem;">Tahun</label>
+                            <input type="number" name="tahun" class="form-control form-control-sm" value="{{ now()->year }}" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i>Proses Pelunasan Otomatis</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -216,6 +258,11 @@
                 theme: 'bootstrap-5',
                 width: '100%',
                 dropdownParent: $('#generateModal')
+            });
+            $('#autoLunasModal .form-select').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                dropdownParent: $('#autoLunasModal')
             });
         });
 

@@ -23,41 +23,8 @@ class SimulatorController extends Controller
     {
         $transaksi = TransaksiSandbox::where('order_id', $orderId)->firstOrFail();
 
-        if ($transaksi->status === 'sukses') {
-            return redirect()->back()->with('error', 'Transaksi ini sudah pernah berhasil.');
-        }
+        LogAktivitas::log('sandbox_webhook', "Simulasi pengiriman transfer/QR untuk Order ID {$orderId} sejumlah Rp {$transaksi->total_nominal}");
 
-        // Simulasikan pembayaran sukses
-        $transaksi->update([
-            'status' => 'sukses'
-        ]);
-
-        $daftarBulan = [];
-
-        foreach ($transaksi->pembayaran as $pembayaran) {
-            $pembayaran->update([
-                'tanggal_verifikasi' => now(),
-                // 'verified_by' bisa dikosongi atau diisi ID sistem bot jika ada. Kita kosongi karena auto.
-                'catatan' => 'Auto-verified by Sandbox Simulator'
-            ]);
-
-            $tagihan = $pembayaran->tagihan;
-            $tagihan->update(['status' => 'lunas']);
-            
-            $daftarBulan[] = $tagihan->nama_bulan . ' ' . $tagihan->tahun;
-        }
-
-        $bulanStr = implode(', ', $daftarBulan);
-
-        // Buat Notifikasi ke Siswa
-        Notifikasi::create([
-            'user_id' => $transaksi->siswa->user_id,
-            'pesan' => "Pembayaran Anda sebesar Rp " . number_format($transaksi->total_nominal, 0, ',', '.') . " untuk tagihan ($bulanStr) berhasil diverifikasi Gateway Sandbox.",
-            'is_read' => false,
-        ]);
-
-        LogAktivitas::log('sandbox_webhook', "Simulasi pembayaran sukses untuk Order ID {$orderId} sejumlah Rp {$transaksi->total_nominal}");
-
-        return redirect()->route('sandbox.simulator', $orderId)->with('success', 'Pembayaran berhasil dikonfirmasi! Anda dapat menutup halaman simulator ini.');
+        return redirect()->route('sandbox.simulator', $orderId)->with('info', 'Pembayaran QR/Transfer telah dikonfirmasi di simulator. Harap upload foto bukti transfer (.jpg) di halaman Invoice untuk diverifikasi secara manual oleh Admin.');
     }
 }

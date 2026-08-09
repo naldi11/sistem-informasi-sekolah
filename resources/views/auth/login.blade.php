@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - SMANKER</title>
+    <title>PEMBAYARAN SPP SMA N 1 KERAJAAN</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -92,7 +92,7 @@
 <body>
     <div class="login-card">
         <div class="login-logo"><i class="bi bi-mortarboard-fill"></i></div>
-        <h4 class="text-center fw-bold mb-1">SMA N1 KERAJAAN</h4>
+        <h4 class="text-center fw-bold mb-1">PEMBAYARAN SPP SMA N 1 KERAJAAN</h4>
         <p class="text-center text-muted mb-4" style="font-size:0.85rem;">Masuk ke akun Anda</p>
 
         @if($errors->any())

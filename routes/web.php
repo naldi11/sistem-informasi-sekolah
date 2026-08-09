@@ -57,6 +57,7 @@ Route::middleware(['auth', 'first_login', 'admin'])->prefix('admin')->name('admi
     Route::get('/tagihan', [TagihanController::class, 'index'])->name('tagihan.index');
     Route::post('/tagihan/generate', [TagihanController::class, 'generateManual'])->name('tagihan.generate');
     Route::post('/tagihan/auto-generate', [TagihanController::class, 'autoGenerate'])->name('tagihan.autoGenerate');
+    Route::post('/tagihan/auto-lunas-prior', [TagihanController::class, 'autoLunasPrior'])->name('tagihan.autoLunasPrior');
 
     // Pembayaran
     Route::get('/pembayaran', [AdminPembayaranController::class, 'index'])->name('pembayaran.index');
@@ -68,6 +69,8 @@ Route::middleware(['auth', 'first_login', 'admin'])->prefix('admin')->name('admi
     // Laporan
     Route::get('/laporan/per-siswa', [LaporanController::class, 'perSiswa'])->name('laporan.perSiswa');
     Route::get('/laporan/per-bulan', [LaporanController::class, 'perBulan'])->name('laporan.perBulan');
+    Route::get('/laporan/per-kelas', [LaporanController::class, 'perKelas'])->name('laporan.perKelas');
+    Route::get('/laporan/keseluruhan', [LaporanController::class, 'keseluruhan'])->name('laporan.keseluruhan');
     Route::get('/laporan/tunggakan', [LaporanController::class, 'tunggakan'])->name('laporan.tunggakan');
     Route::get('/laporan/rekap', [LaporanController::class, 'rekap'])->name('laporan.rekap');
     Route::get('/laporan/export-pdf', [LaporanController::class, 'exportPdf'])->name('laporan.exportPdf');

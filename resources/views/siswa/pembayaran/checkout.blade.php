@@ -61,10 +61,10 @@
                                         @else
                                             <i class="bi bi-cash-coin fs-4 text-warning me-2"></i> {{ $m->nama }}
                                         @endif
-                                        @if($m->butuh_bukti)
-                                            <span class="badge bg-primary rounded-pill ms-1 text-white" style="font-size:0.65rem;">Perlu Bukti Transfer</span>
+                                        @if($m->butuh_bukti || $m->kategori === 'qris')
+                                            <span class="badge bg-primary rounded-pill ms-1 text-white" style="font-size:0.65rem;">Perlu Bukti Transfer (JPG)</span>
                                         @else
-                                            <span class="badge bg-success rounded-pill ms-1 text-white" style="font-size:0.65rem;">Otomatis / QRIS</span>
+                                            <span class="badge bg-info rounded-pill ms-1 text-white" style="font-size:0.65rem;">Virtual Account</span>
                                         @endif
                                     </label>
                                 </div>
@@ -114,10 +114,10 @@
                     <div class="card border-primary bg-primary bg-opacity-10 mb-3" id="buktiUploadContainer" style="display: none;">
                         <div class="card-body">
                             <label class="form-label fw-bold text-primary mb-1">
-                                <i class="bi bi-upload me-1"></i> Upload Bukti Transfer <span class="text-danger">*</span>
+                                <i class="bi bi-upload me-1"></i> Upload Bukti Transfer (.jpg) <span class="text-danger">*</span>
                             </label>
-                            <input type="file" name="file_bukti" id="inputFileBukti" class="form-control" accept="image/jpeg,image/png,image/jpg,application/pdf">
-                            <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Format: JPG, PNG, atau PDF (Maksimal 5MB). Lampirkan bukti pembayaran yang sah.</small>
+                            <input type="file" name="file_bukti" id="inputFileBukti" class="form-control" accept="image/jpeg,image/jpg,.jpg,.jpeg">
+                            <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Format: File JPG / JPEG sahaja (Maksimal 5MB). Bukti wajib diunggah dan diverifikasi admin.</small>
                         </div>
                     </div>
 
@@ -164,12 +164,12 @@
                 const rek = selectedRadio.dataset.rekening;
                 const pem = selectedRadio.dataset.pemilik;
                 const ins = selectedRadio.dataset.instruksi;
-                const needsProof = selectedRadio.dataset.butuhBukti === '1';
+                const needsProof = selectedRadio.dataset.butuhBukti === '1' || kat === 'qris';
 
                 if (kat === 'qris') {
-                    targetNoRek.innerText = rek && rek !== '-' ? rek : 'QRIS Code Dinamis (Otomatis Dibuat pada Halaman Invoice)';
+                    targetNoRek.innerText = rek && rek !== '-' ? rek : 'QRIS Code Dinamis';
                     targetPemilikWrap.style.display = 'none';
-                    infoNextStep.innerHTML = '<i class="bi bi-qr-code me-1"></i> Pada halaman berikutnya Anda dapat melakukan scan QRIS / download QR Code.';
+                    infoNextStep.innerHTML = '<i class="bi bi-qr-code me-1"></i> Scan QRIS dan upload foto bukti transfer (.jpg) untuk diverifikasi oleh Admin.';
                 } else {
                     targetNoRek.innerText = rek && rek !== '-' ? rek : '-';
                     const hasPemilik = pem && pem.trim() !== '' && pem.trim() !== '-';
@@ -183,7 +183,7 @@
                     if (kat === 'va') {
                         infoNextStep.innerHTML = '<i class="bi bi-bank me-1"></i> Silakan transfer ke Nomor Virtual Account di atas.';
                     } else {
-                        infoNextStep.innerHTML = '<i class="bi bi-upload me-1"></i> Setelah transfer, silakan upload bukti transfer pada form di bawah atau di halaman berikutnya.';
+                        infoNextStep.innerHTML = '<i class="bi bi-upload me-1"></i> Setelah transfer, silakan upload bukti transfer (.jpg) di bawah ini.';
                     }
                 }
 

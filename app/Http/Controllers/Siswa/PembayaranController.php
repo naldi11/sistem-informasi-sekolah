@@ -72,10 +72,10 @@ class PembayaranController extends Controller
             'metode_pembayaran' => 'required|string',
         ];
 
-        if ($metode && $metode->butuh_bukti) {
-            $rules['file_bukti'] = 'required|mimes:jpeg,png,jpg,pdf|max:5120';
+        if ($metode && ($metode->butuh_bukti || $metode->kategori === 'qris')) {
+            $rules['file_bukti'] = 'required|mimes:jpg,jpeg|max:5120';
         } else {
-            $rules['file_bukti'] = 'nullable|mimes:jpeg,png,jpg,pdf|max:5120';
+            $rules['file_bukti'] = 'nullable|mimes:jpg,jpeg|max:5120';
         }
 
         $request->validate($rules);
@@ -182,7 +182,7 @@ class PembayaranController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'file_bukti' => 'required|mimes:jpeg,png,jpg,pdf|max:5120',
+            'file_bukti' => 'required|mimes:jpg,jpeg|max:5120',
         ]);
 
         $file = $request->file('file_bukti');

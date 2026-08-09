@@ -51,8 +51,8 @@
                         @csrf
                         <div class="mb-3">
                             <label class="form-label fw-medium">Upload Bukti Transfer</label>
-                            <input type="file" name="file_bukti" class="form-control" accept=".jpg,.jpeg,.png" required>
-                            <small class="text-muted">Format: JPG/PNG, Maks: 5MB</small>
+                            <input type="file" name="file_bukti" class="form-control" accept="image/jpeg,image/jpg,.jpg,.jpeg" required>
+                            <small class="text-muted">Format: JPG / JPEG sahaja (Maks: 5MB)</small>
                         </div>
                         <div class="d-flex gap-2">
                             <a href="{{ route('siswa.dashboard') }}" class="btn btn-secondary">Batal</a>

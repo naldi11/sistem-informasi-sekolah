@@ -68,6 +68,76 @@ class TagihanService
     }
 
     /**
+     * Pelunasan otomatis tagihan bulan-bulan sebelum bulan mulai penggunaan sistem.
+     * (Misal sistem mulai Agustus / bulan 8, maka bulan 7 / Juli otomatis dilunaskan untuk semua siswa).
+     */
+    public function autoLunasPriorMonths(int $mulaiBulan, int $tahun, array $siswaIds = []): int
+    {
+        $count = 0;
+
+        // Tentukan daftar bulan prior di semester yang sama
+        if ($mulaiBulan >= 7 && $mulaiBulan <= 12) {
+            // Semester Ganjil: bulan 7 s/d ($mulaiBulan - 1)
+            $priorMonths = range(7, $mulaiBulan - 1);
+        } elseif ($mulaiBulan >= 2 && $mulaiBulan <= 6) {
+            // Semester Genap: bulan 1 s/d ($mulaiBulan - 1)
+            $priorMonths = range(1, $mulaiBulan - 1);
+        } else {
+            $priorMonths = [];
+        }
+
+        if (empty($priorMonths)) {
+            return 0;
+        }
+
+        $query = Siswa::active()->with('kelas');
+        if (!empty($siswaIds)) {
+            $query->whereIn('id', $siswaIds);
+        }
+        $siswaList = $query->get();
+
+        foreach ($priorMonths as $bulan) {
+            foreach ($siswaList as $siswa) {
+                $tagihan = Tagihan::where('siswa_id', $siswa->id)
+                    ->where('bulan', $bulan)
+                    ->where('tahun', $tahun)
+                    ->first();
+
+                if (!$tagihan) {
+                    $spp = $this->getSppAktif($siswa->kelas_id, $bulan, $tahun);
+                    if ($spp) {
+                        $tagihan = Tagihan::create([
+                            'siswa_id' => $siswa->id,
+                            'spp_id' => $spp->id,
+                            'bulan' => $bulan,
+                            'tahun' => $tahun,
+                            'nominal' => $spp->nominal,
+                            'status' => 'lunas',
+                        ]);
+                        $count++;
+                    }
+                } else {
+                    if ($tagihan->status !== 'lunas') {
+                        $tagihan->update(['status' => 'lunas']);
+                        $count++;
+                    }
+                }
+
+                if ($tagihan && !$tagihan->pembayaran) {
+                    \App\Models\Pembayaran::create([
+                        'tagihan_id' => $tagihan->id,
+                        'tanggal_verifikasi' => Carbon::now(),
+                        'verified_by' => auth()->id(),
+                        'catatan' => 'Pelunasan Otomatis Sebelum Sistem (Manual)',
+                    ]);
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * Cek apakah tagihan sudah ada untuk siswa tertentu.
      */
     public function tagihanExists(int $siswaId, int $bulan, int $tahun): bool

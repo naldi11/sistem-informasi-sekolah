@@ -59,9 +59,9 @@
                         @endforeach
                         <div class="mb-3">
                             <label class="form-label fw-medium">Upload Bukti Transfer</label>
-                            <input type="file" name="file_bukti[]" class="form-control" accept=".jpg,.jpeg,.png" required
+                            <input type="file" name="file_bukti[]" class="form-control" accept="image/jpeg,image/jpg,.jpg,.jpeg" required
                                 multiple>
-                            <small class="text-muted">Format: JPG/PNG, Maks: 5MB per file. Bisa upload beberapa bukti
+                            <small class="text-muted">Format: JPG / JPEG sahaja (Maks: 5MB per file). Bisa upload beberapa bukti
                                 sekaligus.</small>
                         </div>
                         <div class="d-flex gap-2">

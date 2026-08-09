@@ -72,6 +72,76 @@ class LaporanController extends Controller
         return view('admin.laporan.per-bulan', compact('kelasList', 'tagihan', 'bulan', 'tahun', 'totalLunas', 'totalBelum'));
     }
 
+    public function perKelas(Request $request)
+    {
+        $kelasList = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->get();
+        $kelas = null;
+        $tagihan = collect();
+        $bulan = $request->get('bulan', Carbon::now()->month);
+        $tahun = $request->get('tahun', Carbon::now()->year);
+
+        if ($request->filled('kelas_id')) {
+            $kelas = Kelas::findOrFail($request->kelas_id);
+            $query = Tagihan::with(['siswa', 'spp'])
+                ->whereHas('siswa', fn($q) => $q->where('kelas_id', $kelas->id));
+
+            if ($request->filled('bulan')) {
+                $query->where('bulan', $request->bulan);
+            }
+            if ($request->filled('tahun')) {
+                $query->where('tahun', $request->tahun);
+            }
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            $tagihan = $query->orderBy('tahun', 'desc')->orderBy('bulan', 'desc')->get();
+        }
+
+        $totalLunas = $tagihan->where('status', 'lunas')->sum('nominal');
+        $totalBelum = $tagihan->whereIn('status', ['belum_bayar', 'ditolak', 'menunggu_verifikasi'])->sum('nominal');
+
+        return view('admin.laporan.per-kelas', compact('kelasList', 'kelas', 'tagihan', 'bulan', 'tahun', 'totalLunas', 'totalBelum'));
+    }
+
+    public function keseluruhan(Request $request)
+    {
+        $kelasList = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->get();
+
+        $query = Tagihan::with(['siswa.kelas', 'spp', 'pembayaran']);
+
+        if ($request->filled('search')) {
+            $query->whereHas('siswa', fn($q) => $q->where('nama', 'like', '%' . $request->search . '%')->orWhere('nis', 'like', '%' . $request->search . '%'));
+        }
+        if ($request->filled('kelas_id')) {
+            $query->whereHas('siswa', fn($q) => $q->where('kelas_id', $request->kelas_id));
+        }
+        if ($request->filled('bulan')) {
+            $query->where('bulan', $request->bulan);
+        }
+        if ($request->filled('tahun')) {
+            $query->where('tahun', $request->tahun);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $stats = [
+            'totalCount' => (clone $query)->count(),
+            'totalNominal' => (float) (clone $query)->sum('nominal'),
+            'lunasCount' => (clone $query)->where('status', 'lunas')->count(),
+            'lunasNominal' => (float) (clone $query)->where('status', 'lunas')->sum('nominal'),
+            'menungguCount' => (clone $query)->where('status', 'menunggu_verifikasi')->count(),
+            'menungguNominal' => (float) (clone $query)->where('status', 'menunggu_verifikasi')->sum('nominal'),
+            'belumCount' => (clone $query)->whereIn('status', ['belum_bayar', 'ditolak'])->count(),
+            'belumNominal' => (float) (clone $query)->whereIn('status', ['belum_bayar', 'ditolak'])->sum('nominal'),
+        ];
+
+        $tagihan = $query->orderBy('tahun', 'desc')->orderBy('bulan', 'desc')->paginate(30)->appends($request->query());
+
+        return view('admin.laporan.keseluruhan', compact('kelasList', 'tagihan', 'stats'));
+    }
+
     public function tunggakan(Request $request)
     {
         $kelasList = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->get();
@@ -166,6 +236,29 @@ class LaporanController extends Controller
             return $pdf->download("laporan-spp-{$namaBulan}-{$tahun}.pdf");
         }
 
+        if ($type === 'per-kelas' && $request->filled('kelas_id')) {
+            $kelas = Kelas::findOrFail($request->kelas_id);
+            $query = Tagihan::with(['siswa', 'spp'])
+                ->whereHas('siswa', fn($q) => $q->where('kelas_id', $kelas->id));
+            if ($request->filled('bulan')) $query->where('bulan', $request->bulan);
+            if ($request->filled('tahun')) $query->where('tahun', $request->tahun);
+            if ($request->filled('status')) $query->where('status', $request->status);
+            $tagihan = $query->get();
+            $pdf = Pdf::loadView('admin.laporan.pdf.per-kelas', compact('kelas', 'tagihan', 'bulan', 'tahun'));
+            return $pdf->download("laporan-spp-kelas-{$kelas->nama_kelas}.pdf");
+        }
+
+        if ($type === 'keseluruhan') {
+            $query = Tagihan::with(['siswa.kelas', 'spp']);
+            if ($request->filled('kelas_id')) $query->whereHas('siswa', fn($q) => $q->where('kelas_id', $request->kelas_id));
+            if ($request->filled('bulan')) $query->where('bulan', $request->bulan);
+            if ($request->filled('tahun')) $query->where('tahun', $request->tahun);
+            if ($request->filled('status')) $query->where('status', $request->status);
+            $tagihan = $query->get();
+            $pdf = Pdf::loadView('admin.laporan.pdf.keseluruhan', compact('tagihan'));
+            return $pdf->download("laporan-spp-keseluruhan.pdf");
+        }
+
         if ($type === 'tunggakan') {
             $query->whereIn('status', ['belum_bayar', 'ditolak']);
             if ($request->filled('kelas_id')) {
@@ -193,6 +286,9 @@ class LaporanController extends Controller
         $tahun = $request->get('tahun', Carbon::now()->year);
         $namaBulan = Carbon::create($tahun, $bulan, 1)->translatedFormat('F');
 
-        return Excel::download(new LaporanExport($type, $bulan, $tahun, $request->kelas_id, $request->siswa_id), "laporan-spp-{$type}-{$namaBulan}-{$tahun}.xlsx");
+        return Excel::download(
+            new LaporanExport($type, $bulan, $tahun, $request->kelas_id, $request->siswa_id, $request->status),
+            "laporan-spp-{$type}-{$namaBulan}-{$tahun}.xlsx"
+        );
     }
 }

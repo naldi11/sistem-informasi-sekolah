@@ -16,14 +16,16 @@ class LaporanExport implements FromCollection, WithHeadings, WithMapping, WithTi
     protected $tahun;
     protected $kelasId;
     protected $siswaId;
+    protected $status;
 
-    public function __construct($type, $bulan, $tahun, $kelasId = null, $siswaId = null)
+    public function __construct($type, $bulan = null, $tahun = null, $kelasId = null, $siswaId = null, $status = null)
     {
         $this->type = $type;
         $this->bulan = $bulan;
         $this->tahun = $tahun;
         $this->kelasId = $kelasId;
         $this->siswaId = $siswaId;
+        $this->status = $status;
     }
 
     public function collection()
@@ -31,18 +33,32 @@ class LaporanExport implements FromCollection, WithHeadings, WithMapping, WithTi
         $query = Tagihan::with(['siswa.kelas']);
 
         if ($this->type === 'per-bulan') {
-            $query->where('bulan', $this->bulan)->where('tahun', $this->tahun);
+            if ($this->bulan) $query->where('bulan', $this->bulan);
+            if ($this->tahun) $query->where('tahun', $this->tahun);
+        } elseif ($this->type === 'per-kelas') {
+            if ($this->kelasId) {
+                $query->whereHas('siswa', fn($q) => $q->where('kelas_id', $this->kelasId));
+            }
+            if ($this->bulan) $query->where('bulan', $this->bulan);
+            if ($this->tahun) $query->where('tahun', $this->tahun);
         } elseif ($this->type === 'tunggakan') {
             $query->whereIn('status', ['belum_bayar', 'ditolak']);
         } elseif ($this->type === 'per-siswa' && $this->siswaId) {
             $query->where('siswa_id', $this->siswaId);
+        } elseif ($this->type === 'keseluruhan') {
+            if ($this->bulan) $query->where('bulan', $this->bulan);
+            if ($this->tahun) $query->where('tahun', $this->tahun);
         }
 
-        if ($this->kelasId) {
+        if ($this->kelasId && $this->type !== 'per-kelas') {
             $query->whereHas('siswa', fn($q) => $q->where('kelas_id', $this->kelasId));
         }
 
-        return $query->orderBy('tahun')->orderBy('bulan')->get();
+        if ($this->status) {
+            $query->where('status', $this->status);
+        }
+
+        return $query->orderBy('tahun', 'desc')->orderBy('bulan', 'desc')->get();
     }
 
     public function headings(): array
