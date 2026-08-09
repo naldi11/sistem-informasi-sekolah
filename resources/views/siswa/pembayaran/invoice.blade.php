@@ -31,39 +31,96 @@
                             @endif
                         </div>
                     </div>
-                @else
-                    <h6 class="text-muted mb-1">Total Tagihan</h6>
-                    <h2 class="fw-bold text-dark mb-4">Rp {{ number_format($transaksi->total_nominal, 0, ',', '.') }}</h2>
-                    <hr>
-
-                    @if($transaksi->tipe === 'qris')
-                        <h6 class="fw-bold text-dark mb-3">Scan QR Code Berikut:</h6>
+                @elseif($transaksi->status === 'menunggu_verifikasi')
+                    <div class="my-5">
+                        <i class="bi bi-hourglass-split text-info" style="font-size: 5rem;"></i>
+                        <h4 class="mt-3 text-info fw-bold">Menunggu Verifikasi Admin</h4>
+                        <p class="text-muted">Bukti transfer Anda telah diterima dan sedang menunggu pengecekan oleh Admin.</p>
                         
-                        <div id="qrDownloadCard" class="mb-4 d-inline-block p-4 border rounded bg-white shadow-sm" style="min-width: 300px;">
-                            <div class="mb-3">
-                                <h6 class="mb-0 text-primary fw-bold"><i class="bi bi-qr-code"></i> QRIS</h6>
-                                <small class="text-muted">{{ config('app.name', 'Institusi Pendidikan') }}</small>
+                        @php
+                            $pembayaranFirst = $transaksi->pembayaran->first();
+                            $hasBukti = $pembayaranFirst && !empty($pembayaranFirst->file_bukti);
+                        @endphp
+                        
+                        @if($hasBukti)
+                            <div class="mt-4">
+                                <a href="{{ asset('storage/' . $pembayaranFirst->file_bukti) }}" target="_blank" class="btn btn-outline-info rounded-pill px-4">
+                                    <i class="bi bi-eye me-1"></i> Lihat Foto Bukti
+                                </a>
                             </div>
-                            
-                            <div class="bg-white p-2 d-inline-block rounded">
-                                <img src="data:image/svg+xml;base64,{{ base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(220)->generate($transaksi->kode_pembayaran)) }}" alt="QRIS" class="img-fluid" id="qrisImage">
-                            </div>
-                            
-                            <div class="text-center mt-3 pt-2 border-top">
-                                <h5 class="fw-bold text-dark mb-1">Rp {{ number_format($transaksi->total_nominal, 0, ',', '.') }}</h5>
-                                <small class="text-muted">Order: {{ $transaksi->order_id }}</small>
-                            </div>
-                        </div>
+                        @endif
 
-                        <div>
-                            <button onclick="downloadQR()" class="btn btn-outline-dark btn-sm" id="btnDownload">
-                                <i class="bi bi-download me-1"></i> Unduh QR Code
-                            </button>
-                            <a href="{{ route('sandbox.simulator', $transaksi->order_id) }}" target="_blank" class="btn btn-primary btn-sm ms-2">
-                                <i class="bi bi-box-arrow-up-right me-1"></i> Buka Simulator E-Wallet
+                        <div class="mt-5 pt-4 border-top d-flex justify-content-center">
+                            <a href="{{ route('siswa.dashboard') }}" class="btn btn-secondary rounded-pill px-4">
+                                <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
                             </a>
                         </div>
+                    </div>
+                @else
+                    
+                    @if($transaksi->tipe === 'qris')
+                        <!-- E-Wallet Style Struk -->
+                        <div class="mx-auto border rounded-4 shadow-sm overflow-hidden mb-4" style="max-width: 350px;">
+                            <div class="bg-primary text-white p-3 text-center">
+                                <h6 class="mb-0 fw-bold">Pindai QR Code Berikut</h6>
+                            </div>
+                            <div class="p-4 bg-white" id="qrDownloadCard">
+                                <div class="text-center mb-3">
+                                    <h5 class="fw-bold mb-1 text-primary"><i class="bi bi-qr-code"></i> QRIS</h5>
+                                    <small class="text-muted">{{ config('app.name', 'Institusi Pendidikan') }}</small>
+                                </div>
+                                
+                                <div class="text-center mb-4">
+                                    <img src="data:image/svg+xml;base64,{{ base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(200)->generate($transaksi->kode_pembayaran)) }}" alt="QRIS" class="img-fluid border p-2 rounded-3 shadow-sm" id="qrisImage">
+                                </div>
+                                
+                                <div class="text-center pt-3 border-top" style="border-top-style: dashed !important;">
+                                    <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px;">Total Tagihan</small>
+                                    <h3 class="fw-bold text-dark mb-0 mt-1">Rp {{ number_format($transaksi->total_nominal, 0, ',', '.') }}</h3>
+                                    <small class="text-muted d-block mt-2" style="font-size: 11px;">Order ID: {{ $transaksi->order_id }}</small>
+                                </div>
+                            </div>
+                            <div class="bg-light p-2 text-center d-flex justify-content-center gap-2">
+                                <button onclick="downloadQR()" class="btn btn-outline-dark btn-sm w-50" id="btnDownload">
+                                    <i class="bi bi-download"></i> Unduh
+                                </button>
+                                <a href="{{ route('sandbox.simulator', $transaksi->order_id) }}" target="_blank" class="btn btn-primary btn-sm w-50">
+                                    <i class="bi bi-box-arrow-up-right"></i> Simulator
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- CTA Upload Bukti below the Struk -->
+                        <div class="mt-4 pt-4 border-top text-center">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-earmark-image me-1 text-primary"></i> Upload Bukti Transfer</h6>
+                            <p class="text-muted small mb-3">Setelah melakukan pembayaran via e-wallet / m-banking, wajib upload screenshot bukti transfer agar admin dapat memverifikasinya.</p>
+                            
+                            <form action="{{ route('siswa.bayar.uploadBukti', $transaksi->order_id) }}" method="POST" enctype="multipart/form-data" class="mx-auto" style="max-width: 400px;">
+                                @csrf
+                                @if($errors->any())
+                                    <div class="alert alert-danger py-2 px-3 small text-start">
+                                        <ul class="mb-0 ps-3">
+                                            @foreach($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+                                <div class="input-group input-group-lg shadow-sm">
+                                    <input type="file" name="file_bukti" class="form-control fs-6" accept="image/jpeg,image/jpg,.jpg,.jpeg" required>
+                                    <button type="submit" class="btn btn-primary px-4 fw-bold">
+                                        <i class="bi bi-upload me-1"></i> Upload
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-2 text-start"><i class="bi bi-info-circle me-1"></i> Format: JPG / JPEG (Maksimal 5MB)</small>
+                            </form>
+                        </div>
+
                     @elseif($transaksi->tipe === 'va')
+                        <h6 class="text-muted mb-1">Total Tagihan</h6>
+                        <h2 class="fw-bold text-dark mb-4">Rp {{ number_format($transaksi->total_nominal, 0, ',', '.') }}</h2>
+                        <hr>
+
                         <h6 class="fw-bold text-dark mb-2">Transfer ke Nomor Virtual Account:</h6>
                         <div class="d-flex align-items-center justify-content-center mt-3 mb-4">
                             <span class="fs-4 badge bg-light text-dark border p-3 font-monospace shadow-sm tracking-wide">
@@ -75,6 +132,10 @@
                             <i class="bi bi-box-arrow-up-right me-1"></i> Buka Simulator M-Banking
                         </a>
                     @else
+                        <h6 class="text-muted mb-1">Total Tagihan</h6>
+                        <h2 class="fw-bold text-dark mb-4">Rp {{ number_format($transaksi->total_nominal, 0, ',', '.') }}</h2>
+                        <hr>
+
                         <h6 class="fw-bold text-dark mb-2">Nomor Rekening Tujuan:</h6>
                         <div class="d-flex align-items-center justify-content-center mt-3 mb-3">
                             <span class="fs-4 badge bg-light text-dark border p-3 font-monospace shadow-sm tracking-wide">
@@ -89,48 +150,39 @@
                         @endif
                     @endif
 
-                    <!-- Upload Bukti Transfer Form -->
-                    <div class="mt-4 pt-3 border-top text-start">
-                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-earmark-image me-1"></i> Bukti Transfer</h6>
-                        
-                        @php
-                            $pembayaranFirst = $transaksi->pembayaran->first();
-                            $hasBukti = $pembayaranFirst && !empty($pembayaranFirst->file_bukti);
-                        @endphp
-
-                        @if($hasBukti)
-                            <div class="mb-3 p-3 border rounded bg-light">
-                                <span class="badge bg-success mb-2"><i class="bi bi-check-circle me-1"></i> Bukti Transfer Telah Diunggah</span>
-                                <div>
-                                    <a href="{{ asset('storage/' . $pembayaranFirst->file_bukti) }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye me-1"></i> Lihat Foto Bukti
-                                    </a>
-                                </div>
-                            </div>
-                        @endif
-
-                        <form action="{{ route('siswa.bayar.uploadBukti', $transaksi->order_id) }}" method="POST" enctype="multipart/form-data">
-                            @csrf
+                    @if($transaksi->tipe !== 'qris')
+                        <!-- Upload Bukti Transfer Form untuk Non-QRIS -->
+                        <div class="mt-4 pt-3 border-top text-start">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-earmark-image me-1"></i> Bukti Transfer</h6>
                             
-                            @if($errors->any())
-                                <div class="alert alert-danger py-2 px-3 small text-start">
-                                    <ul class="mb-0 ps-3">
-                                        @foreach($errors->all() as $error)
-                                            <li>{{ $error }}</li>
-                                        @endforeach
-                                    </ul>
+                            @php
+                                $pembayaranFirst = $transaksi->pembayaran->first();
+                                $hasBukti = $pembayaranFirst && !empty($pembayaranFirst->file_bukti);
+                            @endphp
+                            
+                            <form action="{{ route('siswa.bayar.uploadBukti', $transaksi->order_id) }}" method="POST" enctype="multipart/form-data">
+                                @csrf
+                                
+                                @if($errors->any())
+                                    <div class="alert alert-danger py-2 px-3 small text-start">
+                                        <ul class="mb-0 ps-3">
+                                            @foreach($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+                                <label class="form-label small fw-bold">Upload Bukti Transfer (.jpg):</label>
+                                <div class="input-group">
+                                    <input type="file" name="file_bukti" class="form-control form-control-sm" accept="image/jpeg,image/jpg,.jpg,.jpeg" required>
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-upload me-1"></i> Upload
+                                    </button>
                                 </div>
-                            @endif
-                            <label class="form-label small fw-bold">{{ $hasBukti ? 'Ubah / Upload Ulang Bukti Transfer (.jpg):' : 'Upload Bukti Transfer (.jpg):' }}</label>
-                            <div class="input-group">
-                                <input type="file" name="file_bukti" class="form-control form-control-sm" accept="image/jpeg,image/jpg,.jpg,.jpeg" required>
-                                <button type="submit" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-upload me-1"></i> Upload
-                                </button>
-                            </div>
-                            <small class="text-muted">Format: File JPG / JPEG sahaja (Maksimal 5MB). Memerlukan verifikasi admin.</small>
-                        </form>
-                    </div>
+                                <small class="text-muted">Format: File JPG / JPEG (Maksimal 5MB). Memerlukan verifikasi admin.</small>
+                            </form>
+                        </div>
+                    @endif
 
                     <!-- Navigation & Action Buttons -->
                     <div class="mt-4 pt-3 border-top d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">

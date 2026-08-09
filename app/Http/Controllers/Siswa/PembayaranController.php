@@ -199,6 +199,8 @@ class PembayaranController extends Controller
             $daftarBulan[] = $p->tagihan->nama_bulan . ' ' . $p->tagihan->tahun;
         }
 
+        $transaksi->update(['status' => 'menunggu_verifikasi']);
+
         $admins = \App\Models\User::where('role', 'admin')->get();
         $bulanStr = implode(', ', $daftarBulan);
         foreach ($admins as $admin) {
