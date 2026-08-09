@@ -127,6 +127,19 @@
                         </form>
                     </div>
 
+                    <!-- Navigation & Action Buttons -->
+                    <div class="mt-4 pt-3 border-top d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                        <a href="{{ route('siswa.dashboard') }}" class="btn btn-outline-secondary btn-sm text-nowrap w-100 w-sm-auto">
+                            <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
+                        </a>
+                        <form action="{{ route('siswa.bayar.batal', $transaksi->order_id) }}" method="POST" class="w-100 w-sm-auto" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan transaksi pembayaran ini?');">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-danger btn-sm text-nowrap w-100">
+                                <i class="bi bi-x-circle me-1"></i> Batalkan Pembayaran Ini
+                            </button>
+                        </form>
+                    </div>
+
                 @endif
                 
             </div>

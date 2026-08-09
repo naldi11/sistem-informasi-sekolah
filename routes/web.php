@@ -91,6 +91,7 @@ Route::middleware(['auth', 'first_login', 'siswa'])->prefix('siswa')->name('sisw
     Route::post('/checkout/process', [SiswaPembayaranController::class, 'processCheckout'])->name('bayar.process');
     Route::get('/invoice/{order_id}', [SiswaPembayaranController::class, 'invoice'])->name('bayar.invoice');
     Route::post('/invoice/{order_id}/upload-bukti', [SiswaPembayaranController::class, 'uploadBuktiInvoice'])->name('bayar.uploadBukti');
+    Route::post('/invoice/{order_id}/batal', [SiswaPembayaranController::class, 'batalInvoice'])->name('bayar.batal');
     Route::get('/invoice/{order_id}/status', [SiswaPembayaranController::class, 'checkStatus'])->name('bayar.status');
 });
 

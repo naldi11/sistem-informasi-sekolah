@@ -162,6 +162,10 @@ class PembayaranController extends Controller
             ->where('siswa_id', $siswa->id)
             ->firstOrFail();
 
+        if (in_array($transaksi->status, ['gagal', 'kadaluarsa'])) {
+            return redirect()->route('siswa.dashboard')->with('info', 'Transaksi pembayaran ini telah dibatalkan atau kadaluarsa.');
+        }
+
         $metode = MetodePembayaran::where('nama', $transaksi->metode_pembayaran)
             ->orWhere('kode', $transaksi->metode_pembayaran)
             ->first();
@@ -208,6 +212,35 @@ class PembayaranController extends Controller
 
         return redirect()->route('siswa.bayar.invoice', $orderId)
             ->with('success', 'Bukti pembayaran berhasil diunggah! Menunggu konfirmasi verifikasi admin.');
+    }
+
+    public function batalInvoice($orderId)
+    {
+        $siswa = auth()->user()->siswa;
+        $transaksi = TransaksiSandbox::where('order_id', $orderId)
+            ->where('siswa_id', $siswa->id)
+            ->firstOrFail();
+
+        if ($transaksi->status === 'sukses') {
+            return redirect()->back()->with('error', 'Pembayaran yang sudah lunas tidak dapat dibatalkan.');
+        }
+
+        $transaksi->update(['status' => 'gagal']);
+
+        foreach ($transaksi->pembayaran as $p) {
+            if ($p->file_bukti && file_exists(public_path('storage/' . $p->file_bukti))) {
+                @unlink(public_path('storage/' . $p->file_bukti));
+            }
+            if ($p->tagihan) {
+                $p->tagihan->update(['status' => 'belum_bayar']);
+            }
+            $p->delete();
+        }
+
+        LogAktivitas::log('batal_pembayaran', "Siswa {$siswa->nama} membatalkan transaksi pembayaran {$orderId}.");
+
+        return redirect()->route('siswa.dashboard')
+            ->with('info', "Transaksi pembayaran {$orderId} telah dibatalkan.");
     }
 
     public function checkStatus($orderId)
