@@ -110,21 +110,12 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic File Upload Container -->
-                    <div class="card border-primary bg-primary bg-opacity-10 mb-3" id="buktiUploadContainer" style="display: none;">
-                        <div class="card-body">
-                            <label class="form-label fw-bold text-primary mb-1">
-                                <i class="bi bi-upload me-1"></i> Upload Bukti Transfer (.jpg) <span class="text-danger">*</span>
-                            </label>
-                            <input type="file" name="file_bukti" id="inputFileBukti" class="form-control" accept="image/jpeg,image/jpg,.jpg,.jpeg">
-                            <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>Format: File JPG / JPEG sahaja (Maksimal 5MB). Bukti wajib diunggah dan diverifikasi admin.</small>
-                        </div>
-                    </div>
-
                 </div>
-                <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
-                    <a href="{{ route('siswa.dashboard') }}" class="btn btn-outline-secondary">Batal</a>
-                    <button type="submit" class="btn btn-primary d-flex align-items-center px-4" id="btnSubmitCheckout">
+                <div class="card-footer bg-white border-top py-3 d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
+                    <a href="{{ route('siswa.dashboard') }}" class="btn btn-outline-secondary text-nowrap">
+                        <i class="bi bi-x-circle me-1"></i> Batal
+                    </a>
+                    <button type="submit" class="btn btn-primary d-inline-flex align-items-center justify-content-center text-nowrap px-4 py-2" id="btnSubmitCheckout">
                         <i class="bi bi-arrow-right-circle-fill me-2"></i> Lanjut Pembayaran
                     </button>
                 </div>
@@ -137,8 +128,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const radios = document.querySelectorAll('.metode-radio');
-        const uploadBox = document.getElementById('buktiUploadContainer');
-        const fileInput = document.getElementById('inputFileBukti');
         
         const targetContainer = document.getElementById('targetPembayaranContainer');
         const targetNama = document.getElementById('targetMetodeNama');
@@ -148,7 +137,6 @@
         const targetInstruksiWrap = document.getElementById('targetInstruksiWrap');
         const targetInstruksiText = document.getElementById('targetInstruksiText');
         const infoNextStep = document.getElementById('infoNextStep');
-        const btnSubmit = document.getElementById('btnSubmitCheckout');
 
         function updatePaymentSelection() {
             let selectedRadio = null;
@@ -164,12 +152,11 @@
                 const rek = selectedRadio.dataset.rekening;
                 const pem = selectedRadio.dataset.pemilik;
                 const ins = selectedRadio.dataset.instruksi;
-                const needsProof = selectedRadio.dataset.butuhBukti === '1' || kat === 'qris';
 
                 if (kat === 'qris') {
-                    targetNoRek.innerText = rek && rek !== '-' ? rek : 'QRIS Code Dinamis';
+                    targetNoRek.innerText = 'QRIS Code Dinamis';
                     targetPemilikWrap.style.display = 'none';
-                    infoNextStep.innerHTML = '<i class="bi bi-qr-code me-1"></i> Scan QRIS dan upload foto bukti transfer (.jpg) untuk diverifikasi oleh Admin.';
+                    infoNextStep.innerHTML = '<i class="bi bi-qr-code me-1"></i> QR Code QRIS akan ditampilkan di halaman Invoice. Klik <strong>Lanjut Pembayaran</strong> untuk scan & bayar.';
                 } else {
                     targetNoRek.innerText = rek && rek !== '-' ? rek : '-';
                     const hasPemilik = pem && pem.trim() !== '' && pem.trim() !== '-';
@@ -181,9 +168,9 @@
                         targetPemilikWrap.style.display = 'none';
                     }
                     if (kat === 'va') {
-                        infoNextStep.innerHTML = '<i class="bi bi-bank me-1"></i> Silakan transfer ke Nomor Virtual Account di atas.';
+                        infoNextStep.innerHTML = '<i class="bi bi-bank me-1"></i> Nomor Virtual Account akan ditampilkan di halaman Invoice. Klik <strong>Lanjut Pembayaran</strong> untuk melanjutkan.';
                     } else {
-                        infoNextStep.innerHTML = '<i class="bi bi-upload me-1"></i> Setelah transfer, silakan upload bukti transfer (.jpg) di bawah ini.';
+                        infoNextStep.innerHTML = '<i class="bi bi-upload me-1"></i> Klik <strong>Lanjut Pembayaran</strong> untuk ke halaman Invoice & unggah foto bukti transfer.';
                     }
                 }
 
@@ -193,20 +180,8 @@
                 } else {
                     targetInstruksiWrap.style.display = 'none';
                 }
-
-                if (needsProof) {
-                    uploadBox.style.display = 'block';
-                    fileInput.required = true;
-                    btnSubmit.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Konfirmasi & Lanjut';
-                } else {
-                    uploadBox.style.display = 'none';
-                    fileInput.required = false;
-                    btnSubmit.innerHTML = '<i class="bi bi-arrow-right-circle-fill me-2"></i> Lanjut Pembayaran';
-                }
             } else {
                 targetContainer.style.display = 'none';
-                uploadBox.style.display = 'none';
-                fileInput.required = false;
             }
         }
 

@@ -70,13 +70,8 @@ class PembayaranController extends Controller
             'tagihan_ids' => 'required|array|min:1',
             'tagihan_ids.*' => 'exists:tagihan,id',
             'metode_pembayaran' => 'required|string',
+            'file_bukti' => 'nullable|mimes:jpg,jpeg|max:5120',
         ];
-
-        if ($metode && ($metode->butuh_bukti || $metode->kategori === 'qris')) {
-            $rules['file_bukti'] = 'required|mimes:jpg,jpeg|max:5120';
-        } else {
-            $rules['file_bukti'] = 'nullable|mimes:jpg,jpeg|max:5120';
-        }
 
         $request->validate($rules);
 
