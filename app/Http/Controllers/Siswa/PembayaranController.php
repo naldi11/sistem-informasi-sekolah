@@ -268,6 +268,10 @@ class PembayaranController extends Controller
             return redirect()->route('siswa.bayar.invoice', $orderId)->with('error', 'Hanya tagihan yang lunas yang dapat dicetak.');
         }
 
+        if ($transaksi->tipe !== 'qris') {
+            return redirect()->route('siswa.bayar.invoice', $orderId)->with('error', 'Cetak struk hanya tersedia untuk metode pembayaran QRIS.');
+        }
+
         return view('siswa.pembayaran.print', compact('transaksi', 'siswa'));
     }
 }

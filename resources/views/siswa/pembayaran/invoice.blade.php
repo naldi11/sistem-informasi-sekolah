@@ -26,7 +26,9 @@
                         <p class="text-muted">Terima kasih, pembayaran telah berhasil diverifikasi.</p>
                         <div class="d-flex justify-content-center gap-2 mt-3">
                             <a href="{{ route('siswa.dashboard') }}" class="btn btn-outline-secondary">Kembali ke Dashboard</a>
-                            <a href="{{ route('siswa.bayar.print', $transaksi->order_id) }}" target="_blank" class="btn btn-primary"><i class="bi bi-printer me-1"></i> Cetak Struk</a>
+                            @if($transaksi->tipe === 'qris')
+                                <a href="{{ route('siswa.bayar.print', $transaksi->order_id) }}" target="_blank" class="btn btn-primary"><i class="bi bi-printer me-1"></i> Cetak Struk</a>
+                            @endif
                         </div>
                     </div>
                 @else
