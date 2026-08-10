@@ -17,10 +17,14 @@
             <div class="card-header bg-primary text-white py-3">
                 <h5 class="mb-0 fw-bold">Selesaikan Pembayaran Anda</h5>
             </div>
-            <div class="card-body py-4">
+            <div class="card-body p-5 text-center">
+                @php
+                    $pembayaranFirst = $transaksi->pembayaran->first();
+                    $hasBukti = $pembayaranFirst && !empty($pembayaranFirst->file_bukti);
+                @endphp
                 
                 @if($transaksi->status === 'sukses')
-                    <div class="my-4">
+                    <div class="my-5">
                         <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
                         <h4 class="mt-3 text-success fw-bold">Pembayaran Diterima!</h4>
                         <p class="text-muted">Terima kasih, pembayaran telah berhasil diverifikasi.</p>
@@ -31,16 +35,11 @@
                             @endif
                         </div>
                     </div>
-                @elseif($transaksi->status === 'menunggu_verifikasi')
+                @elseif($transaksi->status === 'menunggu_verifikasi' || $hasBukti)
                     <div class="my-5">
                         <i class="bi bi-hourglass-split text-info" style="font-size: 5rem;"></i>
                         <h4 class="mt-3 text-info fw-bold">Menunggu Verifikasi Admin</h4>
                         <p class="text-muted">Bukti transfer Anda telah diterima dan sedang menunggu pengecekan oleh Admin.</p>
-                        
-                        @php
-                            $pembayaranFirst = $transaksi->pembayaran->first();
-                            $hasBukti = $pembayaranFirst && !empty($pembayaranFirst->file_bukti);
-                        @endphp
                         
                         @if($hasBukti)
                             <div class="mt-4">
@@ -59,7 +58,14 @@
                 @else
                     
                     @if($transaksi->tipe === 'qris')
-                        <!-- E-Wallet Style Struk -->
+                        @if(request('action') === 'upload')
+                            <!-- Hide QR Code if action=upload (Came from Simulator) -->
+                            <div class="alert alert-info text-start mb-4 shadow-sm border-0 border-start border-info border-4">
+                                <strong><i class="bi bi-info-circle-fill me-2"></i> Pembayaran Disimulasikan</strong><br>
+                                Silakan upload bukti transfer (struk e-wallet yang baru saja Anda unduh/simpan) di bawah ini untuk diverifikasi oleh admin.
+                            </div>
+                        @else
+                            <!-- E-Wallet Style Struk -->
                         <div class="mx-auto border rounded-4 shadow-sm overflow-hidden mb-4" style="max-width: 350px;">
                             <div class="bg-primary text-white p-3 text-center">
                                 <h6 class="mb-0 fw-bold">Pindai QR Code Berikut</h6>
@@ -89,6 +95,7 @@
                                 </a>
                             </div>
                         </div>
+                        @endif
 
                         <!-- CTA Upload Bukti below the Struk -->
                         <div class="mt-4 pt-4 border-top text-center">
