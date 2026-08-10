@@ -100,4 +100,5 @@ Route::middleware(['auth', 'first_login', 'siswa'])->prefix('siswa')->name('sisw
 Route::prefix('sandbox')->name('sandbox.')->group(function () {
     Route::get('/simulator/{order_id}', [\App\Http\Controllers\SimulatorController::class, 'index'])->name('simulator');
     Route::post('/simulator/{order_id}/pay', [\App\Http\Controllers\SimulatorController::class, 'pay'])->name('simulator.pay');
+    Route::get('/simulator/{order_id}/receipt', [\App\Http\Controllers\SimulatorController::class, 'receipt'])->name('simulator.receipt');
 });

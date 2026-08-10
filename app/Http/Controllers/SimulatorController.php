@@ -21,6 +21,14 @@ class SimulatorController extends Controller
         return view('simulator.index', compact('transaksi'));
     }
 
+    public function receipt($orderId)
+    {
+        $transaksi = TransaksiSandbox::where('order_id', $orderId)->firstOrFail();
+        $transaksi->load('siswa');
+        
+        return view('simulator.receipt', compact('transaksi'));
+    }
+
     public function pay(Request $request, $orderId)
     {
         $transaksi = TransaksiSandbox::where('order_id', $orderId)->firstOrFail();
@@ -32,7 +40,7 @@ class SimulatorController extends Controller
         $pembayaranFirst = $transaksi->pembayaran->first();
         if ($transaksi->tipe === 'qris') {
             LogAktivitas::log('sandbox_webhook', "Simulasi klik bayar QRIS untuk Order ID {$orderId} sejumlah Rp {$transaksi->total_nominal}. Menunggu upload bukti user.");
-            return redirect()->route('sandbox.simulator', $orderId)->with('success', 'Silakan tutup simulator ini dan upload bukti pembayaran Anda di halaman invoice (Sistem membutuhkan foto bukti transfer untuk memverifikasi pembayaran QRIS Anda).');
+            return redirect()->route('sandbox.simulator.receipt', $orderId);
         } else {
             if ($pembayaranFirst && $pembayaranFirst->tagihan) {
                 $this->pembayaranService->verifikasi($pembayaranFirst->tagihan);
