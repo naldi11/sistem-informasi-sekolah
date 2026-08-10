@@ -181,7 +181,7 @@ class PembayaranController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'file_bukti' => 'required|mimes:jpg,jpeg|max:5120',
+            'file_bukti' => 'required|image|max:5120',
         ]);
 
         $file = $request->file('file_bukti');

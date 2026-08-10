@@ -107,12 +107,12 @@
                                     </div>
                                 @endif
                                 <div class="input-group input-group-lg shadow-sm">
-                                    <input type="file" name="file_bukti" class="form-control fs-6" accept="image/jpeg,image/jpg,.jpg,.jpeg" required>
+                                    <input type="file" name="file_bukti" class="form-control fs-6" accept="image/*" required>
                                     <button type="submit" class="btn btn-primary px-4 fw-bold">
                                         <i class="bi bi-upload me-1"></i> Upload
                                     </button>
                                 </div>
-                                <small class="text-muted d-block mt-2 text-start"><i class="bi bi-info-circle me-1"></i> Format: JPG / JPEG (Maksimal 5MB)</small>
+                                <small class="text-muted d-block mt-2 text-start"><i class="bi bi-info-circle me-1"></i> Format: Semua Gambar (Maks. 5MB, Otomatis dikompres)</small>
                             </form>
                         </div>
 
@@ -172,14 +172,14 @@
                                         </ul>
                                     </div>
                                 @endif
-                                <label class="form-label small fw-bold">Upload Bukti Transfer (.jpg):</label>
+                                <label class="form-label small fw-bold">Upload Bukti Transfer (Gambar):</label>
                                 <div class="input-group">
-                                    <input type="file" name="file_bukti" class="form-control form-control-sm" accept="image/jpeg,image/jpg,.jpg,.jpeg" required>
+                                    <input type="file" name="file_bukti" class="form-control form-control-sm" accept="image/*" required>
                                     <button type="submit" class="btn btn-sm btn-primary">
                                         <i class="bi bi-upload me-1"></i> Upload
                                     </button>
                                 </div>
-                                <small class="text-muted">Format: File JPG / JPEG (Maksimal 5MB). Memerlukan verifikasi admin.</small>
+                                <small class="text-muted">Format: Semua Gambar (Maks. 5MB, otomatis dikompres sebelum dikirim).</small>
                             </form>
                         </div>
                     @endif
@@ -251,6 +251,63 @@
             .catch(err => console.error('Gagal mengecek status', err));
     }, 3000);
     @endif
+
+    // Script Kompresi Gambar Otomatis untuk mencegah "Entity Too Large" dari foto Kamera HP
+    function compressImage(file, callback) {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1200;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > MAX_WIDTH) {
+                    height = Math.round((height * MAX_WIDTH) / width);
+                    width = MAX_WIDTH;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(blob => {
+                    const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + "_compressed.jpg", {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    callback(newFile);
+                }, 'image/jpeg', 0.8);
+            };
+        };
+    }
+
+    document.querySelectorAll('form').forEach(form => {
+        const fileInput = form.querySelector('input[type="file"]');
+        if (fileInput) {
+            form.addEventListener('submit', function(e) {
+                const file = fileInput.files[0];
+                if (file && file.type.startsWith('image/') && file.size > 1024 * 1024) { // Kompres jika > 1MB
+                    e.preventDefault();
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    const originalHtml = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Mengompres...';
+                    submitBtn.disabled = true;
+
+                    compressImage(file, function(compressedFile) {
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(compressedFile);
+                        fileInput.files = dataTransfer.files;
+                        form.submit();
+                    });
+                }
+            });
+        }
+    });
 </script>
 @endpush
 @endsection
