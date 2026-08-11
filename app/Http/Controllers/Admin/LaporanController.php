@@ -106,15 +106,15 @@ class LaporanController extends Controller
 
     public function keseluruhan(Request $request)
     {
-        $kelasList = Kelas::orderBy('tingkat')->orderBy('nama_kelas')->get();
+        $tingkatList = Kelas::select('tingkat')->distinct()->orderBy('tingkat')->pluck('tingkat');
 
         $query = Tagihan::with(['siswa.kelas', 'spp', 'pembayaran']);
 
         if ($request->filled('search')) {
             $query->whereHas('siswa', fn($q) => $q->where('nama', 'like', '%' . $request->search . '%')->orWhere('nis', 'like', '%' . $request->search . '%'));
         }
-        if ($request->filled('kelas_id')) {
-            $query->whereHas('siswa', fn($q) => $q->where('kelas_id', $request->kelas_id));
+        if ($request->filled('tingkat')) {
+            $query->whereHas('siswa.kelas', fn($q) => $q->where('tingkat', $request->tingkat));
         }
         if ($request->filled('bulan')) {
             $query->where('bulan', $request->bulan);
@@ -139,7 +139,7 @@ class LaporanController extends Controller
 
         $tagihan = $query->orderBy('tahun', 'desc')->orderBy('bulan', 'desc')->paginate(30)->appends($request->query());
 
-        return view('admin.laporan.keseluruhan', compact('kelasList', 'tagihan', 'stats'));
+        return view('admin.laporan.keseluruhan', compact('tingkatList', 'tagihan', 'stats'));
     }
 
     public function tunggakan(Request $request)
@@ -250,7 +250,7 @@ class LaporanController extends Controller
 
         if ($type === 'keseluruhan') {
             $query = Tagihan::with(['siswa.kelas', 'spp']);
-            if ($request->filled('kelas_id')) $query->whereHas('siswa', fn($q) => $q->where('kelas_id', $request->kelas_id));
+            if ($request->filled('tingkat')) $query->whereHas('siswa.kelas', fn($q) => $q->where('tingkat', $request->tingkat));
             if ($request->filled('bulan')) $query->where('bulan', $request->bulan);
             if ($request->filled('tahun')) $query->where('tahun', $request->tahun);
             if ($request->filled('status')) $query->where('status', $request->status);
@@ -286,8 +286,10 @@ class LaporanController extends Controller
         $tahun = $request->get('tahun', Carbon::now()->year);
         $namaBulan = Carbon::create($tahun, $bulan, 1)->translatedFormat('F');
 
+        $filterKelas = $type === 'keseluruhan' ? $request->tingkat : $request->kelas_id;
+
         return Excel::download(
-            new LaporanExport($type, $bulan, $tahun, $request->kelas_id, $request->siswa_id, $request->status),
+            new LaporanExport($type, $bulan, $tahun, $filterKelas, $request->siswa_id, $request->status),
             "laporan-spp-{$type}-{$namaBulan}-{$tahun}.xlsx"
         );
     }

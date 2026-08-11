@@ -48,9 +48,13 @@ class LaporanExport implements FromCollection, WithHeadings, WithMapping, WithTi
         } elseif ($this->type === 'keseluruhan') {
             if ($this->bulan) $query->where('bulan', $this->bulan);
             if ($this->tahun) $query->where('tahun', $this->tahun);
+            // In LaporanController for 'keseluruhan', we might be passing tingkat into $kelasId parameter slot
+            if ($this->kelasId) {
+                $query->whereHas('siswa.kelas', fn($q) => $q->where('tingkat', $this->kelasId));
+            }
         }
 
-        if ($this->kelasId && $this->type !== 'per-kelas') {
+        if ($this->kelasId && $this->type !== 'per-kelas' && $this->type !== 'keseluruhan') {
             $query->whereHas('siswa', fn($q) => $q->where('kelas_id', $this->kelasId));
         }
 

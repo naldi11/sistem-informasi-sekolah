@@ -205,7 +205,7 @@
             <button onclick="downloadReceipt()" id="btnDownload" class="btn btn-cta btn-dark border-0 shadow-sm">
                 <i class="bi bi-download"></i> Simpan Struk (Image)
             </button>
-            <a href="{{ route('siswa.bayar.invoice', $transaksi->order_id) }}" class="btn btn-cta btn-primary border-0 shadow-sm" style="background-color: #0d6efd;">
+            <a href="{{ route('siswa.bayar.invoice', $transaksi->order_id) }}?action=upload" class="btn btn-cta btn-primary border-0 shadow-sm" style="background-color: #0d6efd;">
                 <i class="bi bi-cloud-arrow-up-fill"></i> Lanjut Upload Bukti Bayar
             </a>
             <div class="text-center mt-2">

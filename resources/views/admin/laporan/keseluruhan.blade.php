@@ -13,12 +13,12 @@
                         <input type="text" name="search" class="form-control form-control-sm" placeholder="Nama / NIS..." value="{{ request('search') }}">
                     </div>
                     <div class="col-md-4 col-lg-2">
-                        <label class="form-label fw-semibold text-muted" style="font-size:0.8rem;"><i class="bi bi-building me-1"></i>Kelas</label>
-                        <select name="kelas_id" class="form-select form-select-sm">
-                            <option value="">Semua Kelas</option>
-                            @foreach($kelasList as $k)
-                                <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                                    {{ $k->nama_kelas }}
+                        <label class="form-label fw-semibold text-muted" style="font-size:0.8rem;"><i class="bi bi-building me-1"></i>Tingkat</label>
+                        <select name="tingkat" class="form-select form-select-sm">
+                            <option value="">Semua Tingkat</option>
+                            @foreach($tingkatList as $t)
+                                <option value="{{ $t }}" {{ request('tingkat') == $t ? 'selected' : '' }}>
+                                    Kelas {{ $t }}
                                 </option>
                             @endforeach
                         </select>
